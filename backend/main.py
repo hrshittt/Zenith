@@ -5,8 +5,7 @@ from contextlib import asynccontextmanager
 from backend.database import engine, Base
 from backend.scheduler import start_scheduler, stop_scheduler
 
-# Create tables (we will move this or handle it properly later)
-Base.metadata.create_all(bind=engine)
+# Base.metadata.create_all(bind=engine) # Handled by Alembic now
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
