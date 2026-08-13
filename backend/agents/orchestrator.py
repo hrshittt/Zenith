@@ -8,7 +8,7 @@ from backend.market_intelligence.service import MarketIntelligenceService
 from backend.database import SessionLocal
 
 class Orchestrator:
-    def process_query(self, profile: Any, query: str) -> ChatResponse:
+    def process_query(self, profile: Any, query: str, chat_history: List[Dict[str, str]] = None) -> ChatResponse:
         trace = []
         
         # 0. Fetch Market Intelligence Context
@@ -46,11 +46,12 @@ class Orchestrator:
         
         # 4. Explainer Agent
         exp_res = explainer_agent.process({"data": data_res, "simulation": risk_res, "compliance": comp_res}, 
-                                          f"Format response as a 10-point response for query: {query}")
+                                          f"Format response as a 10-point response for query: {query}", chat_history=chat_history)
         trace.append({"agent": "Explainer", "action": "Formatted final structured output", "output": exp_res})
         
         # Construct response
         response = ChatResponse(
+            session_id="",
             answer=exp_res,
             confidence="high",
             sources=[

@@ -30,6 +30,7 @@ class Profile(Base):
     alerts = relationship("Alert", back_populates="profile")
     history = relationship("DecisionHistory", back_populates="profile")
     audit_traces = relationship("AuditTrace", back_populates="profile")
+    chat_sessions = relationship("ChatSession", back_populates="profile")
 
 class Alert(Base):
     __tablename__ = "alerts"
@@ -87,3 +88,23 @@ class EconomicIndicator(Base):
     indicator_name = Column(String, index=True)
     value = Column(Float)
     timestamp = Column(DateTime, default=datetime.utcnow)
+
+class ChatSession(Base):
+    __tablename__ = "chat_sessions"
+    id = Column(String, primary_key=True) # UUID
+    profile_id = Column(Integer, ForeignKey("profiles.id"))
+    title = Column(String)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    profile = relationship("Profile", back_populates="chat_sessions")
+    messages = relationship("ChatMessage", back_populates="session", order_by="ChatMessage.created_at", cascade="all, delete-orphan")
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(String, ForeignKey("chat_sessions.id"))
+    role = Column(String) # 'user' or 'twin'
+    content = Column(String)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    session = relationship("ChatSession", back_populates="messages")

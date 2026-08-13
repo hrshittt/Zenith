@@ -42,7 +42,10 @@ function switchView(name) {
   navItems.forEach(b => b.classList.toggle('is-active', b.dataset.view === name));
   document.getElementById('topbarTitle').textContent = titles[name][0];
   document.getElementById('topbarSub').textContent = titles[name][1];
-  if (name === 'ask') seedChat();
+  if (name === 'ask') {
+      resetChat();
+      loadChatSessions();
+  }
 }
 
 /* ============ Profile switching ============ */
@@ -252,6 +255,10 @@ const chatLog = document.getElementById('chatLog');
 const chatForm = document.getElementById('chatForm');
 const chatInput = document.getElementById('chatInput');
 const chatSuggestions = document.getElementById('chatSuggestions');
+const chatSessionList = document.getElementById('chatSessionList');
+const btnNewChat = document.getElementById('btnNewChat');
+
+let currentSessionId = null;
 
 const SUGGESTIONS = [
   'What\u2019s my emergency buffer?', 
@@ -259,22 +266,69 @@ const SUGGESTIONS = [
   'Am I on track for my goal?'
 ];
 
+async function loadChatSessions() {
+  if (!profile()) return;
+  try {
+    const sessions = await window.api.getChatSessions();
+    if(chatSessionList) {
+        chatSessionList.innerHTML = sessions.map(s => `
+          <li style="padding: 8px; border-radius: 4px; cursor: pointer; font-size: 13px; background: ${s.id === currentSessionId ? 'var(--bg-subtle)' : 'transparent'}" 
+              onclick="switchSession('${s.id}')">
+            <div style="font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${s.title}</div>
+            <div style="font-size: 11px; color: var(--ink-faint); margin-top: 2px;">${new Date(s.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+          </li>
+        `).join('');
+    }
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+window.switchSession = async function(id) {
+  currentSessionId = id;
+  chatLog.innerHTML = '';
+  chatSuggestions.innerHTML = '';
+  loadChatSessions(); 
+  
+  try {
+    const session = await window.api.getChatSession(id);
+    session.messages.forEach(m => {
+      const who = m.role === 'assistant' || m.role === 'twin' ? 'twin' : 'user';
+      addBubble(who, m.content);
+    });
+  } catch(e) {
+    addBubble('twin', 'Failed to load chat history.');
+  }
+};
+
+if(btnNewChat) {
+    btnNewChat.addEventListener('click', () => {
+      currentSessionId = null;
+      resetChat();
+      loadChatSessions();
+    });
+}
+
 function seedChat() {
   if (!profile()) return;
-  if (state.chatSeeded) return;
+  if (state.chatSeeded || currentSessionId) return;
   state.chatSeeded = true;
-  addBubble('twin', `Hi — I\u2019m grounded in your custom financial profile. Ask me about your runway, savings, exposure, or anything else.`);
+  addBubble('twin', `Hi — I’m grounded in your custom financial profile. Ask me about your runway, savings, exposure, or anything else.`);
   renderSuggestions();
 }
 
 function resetChat() {
   chatLog.innerHTML = '';
   state.chatSeeded = false;
-  if (document.getElementById('view-ask').classList.contains('is-active')) seedChat();
+  currentSessionId = null;
+  if (document.getElementById('view-ask').classList.contains('is-active')) {
+      seedChat();
+  }
   renderSuggestions();
 }
 
 function renderSuggestions() {
+  if(currentSessionId) return; // Don't show suggestions in an active session
   chatSuggestions.innerHTML = SUGGESTIONS.map(s => `<button type="button" class="chip">${s}</button>`).join('');
   chatSuggestions.querySelectorAll('.chip').forEach(chip => {
     chip.addEventListener('click', () => { chatInput.value = chip.textContent; chatForm.requestSubmit(); });
@@ -295,30 +349,31 @@ function addBubble(who, text) {
   chatLog.scrollTop = chatLog.scrollHeight;
 }
 
-async function answerFor(text) {
-  try {
-      const res = await window.api.askTwin(text);
-      return res.answer;
-  } catch(e) {
-      return "I encountered an error connecting to the backend.";
-  }
-}
-
 chatForm.addEventListener('submit', async e => {
   e.preventDefault();
   const text = chatInput.value.trim();
   if (!text) return;
+  
   addBubble('user', text);
   chatInput.value = '';
+  chatSuggestions.innerHTML = ''; // Hide suggestions once chatting
+  
   const thinking = document.createElement('div');
   thinking.className = 'bubble bubble--twin bubble--thinking';
   thinking.textContent = 'Thinking…';
   chatLog.appendChild(thinking);
   chatLog.scrollTop = chatLog.scrollHeight;
   
-  const reply = await answerFor(text);
-  thinking.remove();
-  addBubble('twin', reply);
+  try {
+      const res = await window.api.askTwin(text, currentSessionId);
+      currentSessionId = res.session_id; 
+      thinking.remove();
+      addBubble('twin', res.answer);
+      loadChatSessions(); 
+  } catch(e) {
+      thinking.remove();
+      addBubble('twin', "I encountered an error connecting to the backend.");
+  }
 });
 
 /* ============ Onboarding State ============ */

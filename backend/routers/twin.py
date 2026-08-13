@@ -4,8 +4,9 @@ from sqlalchemy.orm import Session
 import uuid
 
 from backend.database import get_db
-from backend.models.domain import Profile, AuditTrace
-from backend.schemas.api_models import ChatRequest, ChatResponse, SimulateRequest, SimulateResponse, Outcome
+from backend.models.domain import Profile, AuditTrace, ChatSession, ChatMessage
+from backend.schemas.api_models import ChatRequest, ChatResponse, SimulateRequest, SimulateResponse, Outcome, ChatSessionResponse, ChatSessionDetail, ChatMessageModel
+from typing import List
 from backend.agents.sub_agents import get_groq_client
 from backend.core.auth import get_current_user
 from backend.models.domain import User
@@ -13,13 +14,59 @@ from backend.agents.orchestrator import orchestrator
 
 router = APIRouter(prefix="/twin", tags=["Twin"])
 
+@router.get("/chats", response_model=List[ChatSessionResponse])
+def get_chat_sessions(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    profile = db.query(Profile).filter(Profile.user_id == current_user.id).first()
+    if not profile:
+        return []
+    
+    sessions = db.query(ChatSession).filter(ChatSession.profile_id == profile.id).order_by(ChatSession.created_at.desc()).all()
+    return [{"id": s.id, "title": s.title or "New Chat", "created_at": s.created_at.isoformat()} for s in sessions]
+
+@router.get("/chats/{session_id}", response_model=ChatSessionDetail)
+def get_chat_session(session_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    profile = db.query(Profile).filter(Profile.user_id == current_user.id).first()
+    session = db.query(ChatSession).filter(ChatSession.id == session_id, ChatSession.profile_id == profile.id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+        
+    return {
+        "id": session.id,
+        "title": session.title or "New Chat",
+        "created_at": session.created_at.isoformat(),
+        "messages": [{"role": m.role, "content": m.content} for m in session.messages]
+    }
+
 @router.post("/chat")
 def chat_with_twin(req: ChatRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     profile = db.query(Profile).filter(Profile.user_id == current_user.id).first()
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
         
-    response = orchestrator.process_query(profile, req.message)
+    session_id = req.session_id
+    if not session_id:
+        session_id = str(uuid.uuid4())
+        session = ChatSession(id=session_id, profile_id=profile.id, title=req.message[:30] + "...")
+        db.add(session)
+    else:
+        session = db.query(ChatSession).filter(ChatSession.id == session_id, ChatSession.profile_id == profile.id).first()
+        if not session:
+            session = ChatSession(id=session_id, profile_id=profile.id, title=req.message[:30] + "...")
+            db.add(session)
+            
+    db.commit()
+            
+    user_msg = ChatMessage(session_id=session_id, role="user", content=req.message)
+    db.add(user_msg)
+    db.commit()
+    
+    history = db.query(ChatMessage).filter(ChatMessage.session_id == session_id).order_by(ChatMessage.created_at).all()
+    chat_history = [{"role": m.role, "content": m.content} for m in history[:-1]] 
+    
+    response = orchestrator.process_query(profile, req.message, chat_history=chat_history)
+    
+    twin_msg = ChatMessage(session_id=session_id, role="twin", content=response.answer)
+    db.add(twin_msg)
     
     # Save audit trace
     req_id = str(uuid.uuid4())
@@ -34,6 +81,7 @@ def chat_with_twin(req: ChatRequest, current_user: User = Depends(get_current_us
     db.add(audit)
     db.commit()
     
+    response.session_id = session_id
     return response
 
 def compute_outcome(decision: dict, pct: int):

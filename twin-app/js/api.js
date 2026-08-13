@@ -26,13 +26,25 @@ async function fetchProfile() {
     return await res.json();
 }
 
-async function askTwin(message) {
+async function askTwin(message, sessionId = null) {
     const res = await fetch(`${API_BASE}/twin/chat`, {
         method: "POST",
         headers: getHeaders(),
-        body: JSON.stringify({ message })
+        body: JSON.stringify({ message, session_id: sessionId })
     });
     if (!res.ok) throw new Error("Chat failed");
+    return await res.json();
+}
+
+async function getChatSessions() {
+    const res = await fetch(`${API_BASE}/twin/chats`, { headers: getHeaders() });
+    if (!res.ok) throw new Error("Failed to fetch chats");
+    return await res.json();
+}
+
+async function getChatSession(sessionId) {
+    const res = await fetch(`${API_BASE}/twin/chats/${sessionId}`, { headers: getHeaders() });
+    if (!res.ok) throw new Error("Failed to fetch chat session");
     return await res.json();
 }
 
@@ -90,6 +102,8 @@ window.api = {
     login,
     fetchProfile,
     askTwin,
+    getChatSessions,
+    getChatSession,
     simulateDecision,
     parseStatement,
     confirmProfile,

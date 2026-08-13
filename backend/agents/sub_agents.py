@@ -22,19 +22,24 @@ class Agent:
         self.system_prompt_override = system_prompt_override
         self.client = get_groq_client()
 
-    def process(self, context: Dict[str, Any], instructions: str) -> str:
+    def process(self, context: Dict[str, Any], instructions: str, chat_history: List[Dict[str, str]] = None) -> str:
         if not self.client:
             return f"[{self.name}] Mock processing for: {instructions[:30]}..."
             
         sys_prompt = self.system_prompt_override or f"You are the {self.name} Agent.\nDescription: {self.description}"
         user_prompt = f"Context:\n{context}\n\nTask:\n{instructions}"
         
+        messages = [{"role": "system", "content": sys_prompt}]
+        
+        if chat_history:
+            for msg in chat_history[-5:]: # Only keep last 5 for context length
+                messages.append({"role": msg["role"], "content": msg["content"]})
+                
+        messages.append({"role": "user", "content": user_prompt})
+        
         try:
             response = self.client.chat.completions.create(
-                messages=[
-                    {"role": "system", "content": sys_prompt},
-                    {"role": "user", "content": user_prompt}
-                ],
+                messages=messages,
                 model="llama-3.1-8b-instant",
             )
             return response.choices[0].message.content

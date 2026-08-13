@@ -51,8 +51,22 @@ class ProfileResponse(BaseModel):
 
 class ChatRequest(BaseModel):
     message: str
+    session_id: Optional[str] = None
+
+class ChatMessageModel(BaseModel):
+    role: str
+    content: str
+    
+class ChatSessionResponse(BaseModel):
+    id: str
+    title: str
+    created_at: str
+
+class ChatSessionDetail(ChatSessionResponse):
+    messages: List[ChatMessageModel]
 
 class ChatResponse(BaseModel):
+    session_id: str
     answer: str
     confidence: str
     sources: List[Dict[str, str]]
