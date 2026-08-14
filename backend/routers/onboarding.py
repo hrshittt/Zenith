@@ -91,8 +91,8 @@ def confirm_profile(req: SaveProfileRequest, current_user: User = Depends(get_cu
     profile = db.query(Profile).filter(Profile.user_id == current_user.id).first()
     if not profile:
         profile = Profile(user_id=current_user.id, key=profile_key, label=req.persona.capitalize(), persona=f"{req.persona.capitalize()} (Custom)")
-        profile.currency = "$"
         db.add(profile)
+    profile.currency = "₹"
     
     profile.metrics = req.metrics
     profile.goal = {"title": "Financial Independence", "progress": 25}
@@ -117,7 +117,18 @@ def ai_onboarding_chat(req: AiOnboardingRequest, current_user: User = Depends(ge
     if not client:
         raise HTTPException(status_code=500, detail="LLM client not configured.")
         
-    system_prompt = "You are a financial onboarding AI. Ask the user 3 to 4 short, conversational questions one by one to figure out their monthly salary, total savings, and average monthly expenses. Once you have enough information, reply with the exact word 'ONBOARDING_COMPLETE' followed immediately by a JSON block containing the gathered metrics. Do not include any other text after the JSON."
+    system_prompt = """You are a financial onboarding AI for Indian users. All amounts are in Indian Rupees (₹) — always use the ₹ symbol when referring to money, never $. Ask the user 3 to 4 short, conversational questions one by one to figure out their monthly salary, total savings, average monthly expenses, and any active loans.
+
+Once you have enough information, reply with the exact word ONBOARDING_COMPLETE followed immediately by a JSON block. The JSON MUST match this exact structure and these exact keys (numbers only, no currency symbols, no strings):
+
+{
+    "salary": 0,
+    "savings": 0,
+    "expenses": { "food": 0, "rent": 0, "emi": 0, "shopping": 0, "others": 0 },
+    "loans": 0
+}
+
+Do not include any other text, explanation, or markdown after the JSON. Do not rename any keys. If a value wasn't mentioned by the user, estimate 0 for it rather than omitting the key."""
     
     msgs = [{"role": "system", "content": system_prompt}]
     for m in req.messages:

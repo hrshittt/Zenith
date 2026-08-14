@@ -519,10 +519,10 @@ document.getElementById("btnConfirmData").addEventListener("click", async () => 
     btn.textContent = "Initializing...";
     
     const metrics = [
-        { id: "m_income", label: "Monthly Income", value: Number(document.getElementById("cfIncome").value || 0), trend: [0,0] },
-        { id: "m_savings", label: "Total Savings", value: Number(document.getElementById("cfSavings").value || 0), trend: [0,0] },
-        { id: "m_expenses", label: "Monthly Expenses", value: Number(document.getElementById("cfExpenses").value || 0), trend: [0,0] },
-        { id: "m_loans", label: "Active Loans", value: Number(document.getElementById("cfLoans").value || 0), trend: [0,0] },
+        { id: "m_income", label: "Monthly Income", value: Number(document.getElementById("cfIncome").value || 0), unit: "", trend: [0,0] },
+        { id: "m_savings", label: "Total Savings", value: Number(document.getElementById("cfSavings").value || 0), unit: "", trend: [0,0] },
+        { id: "m_expenses", label: "Monthly Expenses", value: Number(document.getElementById("cfExpenses").value || 0), unit: "", trend: [0,0] },
+        { id: "m_loans", label: "Active Loans", value: Number(document.getElementById("cfLoans").value || 0), unit: "", trend: [0,0] },
         { id: "m_health", label: "Financial Health", value: 85, isPercent: true, trend: [80,85] }
     ];
     
