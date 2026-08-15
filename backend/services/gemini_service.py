@@ -11,6 +11,7 @@ one-file change.
 import os
 import re
 import json
+import time
 import logging
 from typing import Any, Dict, List, Optional
 
@@ -21,6 +22,16 @@ load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 logger = logging.getLogger(__name__)
 
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
+
+
+def _is_rate_limit_error(e: Exception) -> bool:
+    """Best-effort detection of rate-limit/quota errors across whatever shape
+    the SDK raises (HTTP status code, error code string, or message text)."""
+    status = getattr(e, "status_code", None) or getattr(e, "code", None)
+    if status == 429:
+        return True
+    err_str = str(e)
+    return "429" in err_str or "RESOURCE_EXHAUSTED" in err_str or "rate limit" in err_str.lower()
 
 
 def _build_client():
@@ -90,21 +101,31 @@ class GeminiService:
         if json_mode:
             config_kwargs["response_mime_type"] = "application/json"
 
-        try:
-            response = self.client.models.generate_content(
-                model=GEMINI_MODEL,
-                contents=contents,
-                config=types.GenerateContentConfig(**config_kwargs),
-            )
-            text = response.text
-            if text is None:
-                raise RuntimeError("Gemini returned an empty response")
-            return text
-        except Exception as e:
-            # Log only the error type/message — never the prompt or context,
-            # which may contain the user's financial data.
-            logger.error(f"Gemini generation failed ({GEMINI_MODEL}): {type(e).__name__}: {e}")
-            raise
+        config = types.GenerateContentConfig(**config_kwargs)
+
+        # Retry on rate-limit errors with a short backoff — centralized here
+        # so every caller (Ask Twin agents, Simulation, onboarding) gets the
+        # same resilience without duplicating retry logic.
+        max_attempts = 3
+        for attempt in range(max_attempts):
+            try:
+                response = self.client.models.generate_content(
+                    model=GEMINI_MODEL,
+                    contents=contents,
+                    config=config,
+                )
+                text = response.text
+                if text is None:
+                    raise RuntimeError("Gemini returned an empty response")
+                return text
+            except Exception as e:
+                # Log only the error type/message — never the prompt or context,
+                # which may contain the user's financial data.
+                logger.error(f"Gemini generation failed ({GEMINI_MODEL}), attempt {attempt + 1}/{max_attempts}: {type(e).__name__}: {e}")
+                if _is_rate_limit_error(e) and attempt < max_attempts - 1:
+                    time.sleep(2 * (attempt + 1))
+                    continue
+                raise
 
     def generate_json(
         self,

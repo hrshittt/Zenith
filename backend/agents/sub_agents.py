@@ -18,6 +18,8 @@ class Agent:
         user_prompt = f"Context:\n{context}\n\nTask:\n{instructions}"
 
         try:
+            # Retry-on-rate-limit backoff lives centrally in gemini_service.generate()
+            # so every caller (Ask Twin agents, Simulation, onboarding) benefits from it.
             return gemini_service.generate(
                 user_prompt,
                 system_instruction=sys_prompt,
@@ -25,7 +27,10 @@ class Agent:
                 temperature=0.4,
             )
         except Exception as e:
-            return f"[{self.name}] Error invoking LLM: {str(e)}"
+            err_str = str(e)
+            if "RESOURCE_EXHAUSTED" in err_str or "rate limit" in err_str.lower() or " 429" in err_str or err_str.startswith("429"):
+                return f"[{self.name}] Rate limit exceeded after retries. Please wait a moment and try again."
+            return f"[{self.name}] Error invoking LLM: {err_str}"
 
 
 # Define the sub-agents

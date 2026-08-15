@@ -5,10 +5,14 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+import requests as _requests
+
 class YahooFinanceClient:
     def get_price(self, symbol: str) -> float:
         try:
-            ticker = yf.Ticker(symbol)
+            session = _requests.Session()
+            session.request = lambda *args, **kwargs: _requests.Session.request(session, *args, **{**kwargs, "timeout": 5})
+            ticker = yf.Ticker(symbol, session=session)
             # Use '1d' to get current day's price
             todays_data = ticker.history(period='1d')
             if not todays_data.empty:

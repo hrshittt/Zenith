@@ -60,7 +60,7 @@ def chat_with_twin(req: ChatRequest, current_user: User = Depends(get_current_us
     db.commit()
     
     history = db.query(ChatMessage).filter(ChatMessage.session_id == session_id).order_by(ChatMessage.created_at).all()
-    chat_history = [{"role": m.role, "content": m.content} for m in history[:-1]] 
+    chat_history = [{"role": "assistant" if m.role == "twin" else m.role, "content": m.content} for m in history[:-1]] 
     
     response = orchestrator.process_query(profile, req.message, chat_history=chat_history)
     

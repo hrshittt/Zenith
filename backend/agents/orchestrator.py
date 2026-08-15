@@ -1,7 +1,7 @@
 from typing import Dict, Any, List
 import datetime
 
-from backend.agents.sub_agents import data_agent, risk_agent, compliance_agent, explainer_agent
+from backend.agents.sub_agents import risk_agent, compliance_agent, explainer_agent
 from backend.schemas.api_models import ChatResponse, ScenarioSimulateResponse, StageTrace
 from backend.market_intelligence.service import MarketIntelligenceService
 from backend.database import SessionLocal
@@ -30,43 +30,52 @@ funds, or goal-based saving). You may reference the user's own numbers if given,
 ones. Do not repeat the recommendation — this is pure financial education. Respond with plain text only."""
 
 
+_mi_cache = {"data": None, "ts": 0}
+
 class Orchestrator:
     def process_query(self, profile: Any, query: str, chat_history: List[Dict[str, str]] = None) -> ChatResponse:
         trace = []
 
-        # 0. Fetch Market Intelligence Context
-        db = SessionLocal()
-        try:
-            mi_service = MarketIntelligenceService(db)
-            usd_inr = mi_service.get_exchange_rate("USDINR=X")
-            nifty = mi_service.get_stock_price("^NSEI")
-            inflation = mi_service.get_economic_indicator("INFLATION_IN", "INFCPIITM")
-            news = mi_service.get_news_sentiment("finance")
+        # 0. Fetch Market Intelligence Context (cached for 5 minutes to avoid slow repeated calls)
+        if _mi_cache["data"] and (datetime.datetime.utcnow().timestamp() - _mi_cache["ts"]) < 300:
+            mi_context = _mi_cache["data"]
+        else:
+            db = SessionLocal()
+            try:
+                mi_service = MarketIntelligenceService(db)
+                usd_inr = mi_service.get_exchange_rate("USDINR=X")
+                nifty = mi_service.get_stock_price("^NSEI")
+                inflation = mi_service.get_economic_indicator("INFLATION_IN", "INFCPIITM")
+                news = mi_service.get_news_sentiment("finance")
 
-            mi_context = {
-                "USDINR": usd_inr,
-                "NIFTY": nifty,
-                "INFLATION_IN": inflation,
-                "news_sentiment": news
-            }
-        except Exception as e:
-            mi_context = {"error": str(e)}
-        finally:
-            db.close()
+                mi_context = {
+                    "USDINR": usd_inr,
+                    "NIFTY": nifty,
+                    "INFLATION_IN": inflation,
+                    "news_sentiment": news
+                }
+                _mi_cache["data"] = mi_context
+                _mi_cache["ts"] = datetime.datetime.utcnow().timestamp()
+            except Exception as e:
+                mi_context = {"error": str(e)}
+            finally:
+                db.close()
 
-        # 1. Data Agent — grounds the request in the SAME normalized financial
-        #    context Simulation uses (see build_financial_context), plus the
-        #    raw profile fields and live market data.
+        # 1. Data Agent (direct passthrough — no LLM hop, so real numbers never
+        #    get dropped or paraphrased away) — grounds the request in the SAME
+        #    normalized financial context Simulation uses (build_financial_context),
+        #    plus trimmed profile fields and live market data.
         financial_context = build_financial_context(profile)
+        trimmed_metrics = [{"label": m.get("label"), "value": m.get("value")} for m in (profile.metrics or [])]
+        trimmed_alerts = [{"text": a.get("text")} for a in (profile.alerts or [])][:3]
         data_ctx = {
-            "profile_id": profile.id,
-            "metrics": profile.metrics,
-            "goal": profile.goal,
-            "alerts": [{"level": a.level, "text": a.text} for a in (profile.alerts or [])],
+            "currency": profile.currency,
+            "metrics": trimmed_metrics,
+            "alerts": trimmed_alerts,
             "financial_context": ctx_to_dict(financial_context),
-            "market_intelligence": mi_context
+            "market_intelligence": mi_context,
         }
-        data_res = data_agent.process(data_ctx, f"Extract required data for query: {query}")
+        data_res = str(data_ctx)
         trace.append({"agent": "Data", "action": "Fetched user profile metrics, alerts, and market intelligence", "output": data_res})
 
         # 2. Risk/Simulation Agent
