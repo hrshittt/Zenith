@@ -98,7 +98,7 @@ def confirm_profile(req: SaveProfileRequest, current_user: User = Depends(get_cu
     profile.goal = {"title": "Financial Independence", "progress": 25}
     profile.decisionTypes = [
         {"id": "invest_index", "label": "Invest in Index Fund", "primaryLabel": "Est. Return", "primaryUnit": "%", "secondaryLabel": "Risk", "secondaryUnit": " lvl"},
-        {"id": "pay_debt", "label": "Pay off Debt", "primaryLabel": "Interest Saved", "primaryUnit": "$", "secondaryLabel": "Liquidity Hit", "secondaryUnit": "$"}
+        {"id": "pay_debt", "label": "Pay off Debt", "primaryLabel": "Interest Saved", "primaryUnit": "₹", "secondaryLabel": "Liquidity Hit", "secondaryUnit": "₹"}
     ]
     
     db.commit()

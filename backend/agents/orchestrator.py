@@ -7,33 +7,42 @@ from backend.schemas.api_models import ChatResponse
 from backend.market_intelligence.service import MarketIntelligenceService
 from backend.database import SessionLocal
 
+_mi_cache = {"data": None, "ts": 0}
+
 class Orchestrator:
     def process_query(self, profile: Any, query: str, chat_history: List[Dict[str, str]] = None) -> ChatResponse:
         trace = []
         
-        # 0. Fetch Market Intelligence Context
-        db = SessionLocal()
-        try:
-            mi_service = MarketIntelligenceService(db)
-            usd_inr = mi_service.get_exchange_rate("USDINR=X")
-            nifty = mi_service.get_stock_price("^NSEI")
-            inflation = mi_service.get_economic_indicator("INFLATION_IN", "INFCPIITM")
-            news = mi_service.get_news_sentiment("finance")
-            
-            mi_context = {
-                "USDINR": usd_inr,
-                "NIFTY": nifty,
-                "INFLATION_IN": inflation,
-                "news_sentiment": news
-            }
-        except Exception as e:
-            mi_context = {"error": str(e)}
-        finally:
-            db.close()
+        # 0. Fetch Market Intelligence Context (cached for 5 minutes to avoid slow repeated calls)
+        if _mi_cache["data"] and (datetime.datetime.utcnow().timestamp() - _mi_cache["ts"]) < 300:
+            mi_context = _mi_cache["data"]
+        else:
+            db = SessionLocal()
+            try:
+                mi_service = MarketIntelligenceService(db)
+                usd_inr = mi_service.get_exchange_rate("USDINR=X")
+                nifty = mi_service.get_stock_price("^NSEI")
+                inflation = mi_service.get_economic_indicator("INFLATION_IN", "INFCPIITM")
+                news = mi_service.get_news_sentiment("finance")
+                
+                mi_context = {
+                    "USDINR": usd_inr,
+                    "NIFTY": nifty,
+                    "INFLATION_IN": inflation,
+                    "news_sentiment": news
+                }
+                _mi_cache["data"] = mi_context
+                _mi_cache["ts"] = datetime.datetime.utcnow().timestamp()
+            except Exception as e:
+                mi_context = {"error": str(e)}
+            finally:
+                db.close()
         
-        # 1. Data Agent
-        data_ctx = {"profile_id": profile.id, "metrics": profile.metrics, "alerts": profile.alerts, "market_intelligence": mi_context}
-        data_res = data_agent.process(data_ctx, f"Extract required data for query: {query}")
+        # 1. Data Agent (direct passthrough — no LLM hop, so real numbers never get dropped or paraphrased away)
+        trimmed_metrics = [{"label": m.get("label"), "value": m.get("value")} for m in (profile.metrics or [])]
+        trimmed_alerts = [{"text": a.get("text")} for a in (profile.alerts or [])][:3]
+        data_ctx = {"currency": profile.currency, "metrics": trimmed_metrics, "alerts": trimmed_alerts, "market_intelligence": mi_context}
+        data_res = str(data_ctx)
         trace.append({"agent": "Data", "action": "Fetched user profile metrics, alerts, and market intelligence", "output": data_res})
         
         # 2. Risk/Simulation Agent

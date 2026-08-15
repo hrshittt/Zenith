@@ -37,14 +37,21 @@ class Agent:
                 
         messages.append({"role": "user", "content": user_prompt})
         
-        try:
-            response = self.client.chat.completions.create(
-                messages=messages,
-                model="llama-3.1-8b-instant",
-            )
-            return response.choices[0].message.content
-        except Exception as e:
-            return f"[{self.name}] Error invoking LLM: {str(e)}"
+        import time
+        for attempt in range(3):
+            try:
+                response = self.client.chat.completions.create(
+                    messages=messages,
+                    model="llama-3.1-8b-instant",
+                )
+                return response.choices[0].message.content
+            except Exception as e:
+                err_str = str(e)
+                if "rate_limit" in err_str or "429" in err_str:
+                    time.sleep(3)
+                    continue
+                return f"[{self.name}] Error invoking LLM: {err_str}"
+        return f"[{self.name}] Rate limit exceeded after retries. Please wait a moment and try again."
 
 from backend.agents.prompts import EXPLAINER_SYSTEM_PROMPT
 
