@@ -10,6 +10,12 @@ const state = {
 };
 
 let currentProfile = null;
+let pendingScenarioPrefill = null;
+
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
 
 AGENTS.forEach(a => state.agentStatus[a.id] = 'idle');
 
@@ -45,6 +51,11 @@ function switchView(name) {
   if (name === 'ask') {
       resetChat();
       loadChatSessions();
+  }
+  if (name === 'simulate' && pendingScenarioPrefill) {
+      scenarioInput.value = pendingScenarioPrefill;
+      pendingScenarioPrefill = null;
+      scenarioInput.focus();
   }
 }
 
@@ -97,10 +108,11 @@ function renderOverview() {
   document.getElementById('personaLabel').textContent = p.persona;
   document.getElementById('goalStrip').textContent = `${p.goal.title} — ${p.goal.progress}% there`;
 
+  const currency = p.currency || '₹';
   const grid = document.getElementById('statGrid');
   grid.innerHTML = p.metrics.map(m => {
     const trendUp = m.trend && m.trend.length > 0 ? m.trend[m.trend.length - 1] >= m.trend[0] : true;
-    const displayVal = m.isPercent ? `${m.value}%` : `${p.currency}${fmt(m.value)}${m.unit}`;
+    const displayVal = m.isPercent ? `${m.value}%` : `${currency}${fmt(m.value)}${m.unit || ''}`;
     return `
       <div class="stat-card">
         <span class="stat-card__label">${m.label}</span>
@@ -126,31 +138,187 @@ function renderOverview() {
 }
 
 /* ============ Simulate ============ */
-const decisionSelect = document.getElementById('decisionSelect');
-const pctSlider = document.getElementById('pctSlider');
-const pctLabel = document.getElementById('pctLabel');
+const scenarioInput = document.getElementById('scenarioInput');
+const simSuggestionsEl = document.getElementById('simSuggestions');
 
-function renderSimulateForm() {
-  const p = profile();
-  if (!p) return;
-  decisionSelect.innerHTML = p.decisionTypes.map(d => `<option value="${d.id}">${d.label}</option>`).join('');
+const SCENARIO_SUGGESTIONS = [
+  'What happens if I invest ₹20,000 every month for 3 years?',
+  'Can I afford a ₹50,000 EMI?',
+  'What if I increase my monthly savings by ₹10,000?',
+  'How quickly can I reach my savings goal?',
+  'What happens if I have no income for 6 months?'
+];
+
+const STAGE_ID_MAP = { Understand: 'understand', Watch: 'watch', Simulate: 'simulate', Recommend: 'recommend', Teach: 'teach', Check: 'check' };
+
+const IMPACT_LABELS = {
+  monthly_surplus_before: 'Monthly surplus — before',
+  monthly_surplus_after: 'Monthly surplus — after',
+  savings_impact: 'Savings impact',
+  emergency_buffer_before_months: 'Emergency buffer — before',
+  emergency_buffer_after_months: 'Emergency buffer — after',
+  goal_progress_before_pct: 'Goal progress — before',
+  goal_progress_after_pct: 'Goal progress — after',
+  investment_contribution: 'Monthly investment contribution',
+  foir_pct: 'Fixed-obligation ratio (FOIR)',
+  affordability_verdict: 'Affordability verdict',
+  goal_months_remaining_before: 'Months to goal — before',
+  goal_months_remaining_after: 'Months to goal — after',
+  coverage_months: 'Emergency coverage',
+  requested_months: 'Months without income',
+  goal_title: 'Goal',
+  goal_target: 'Goal target',
+  monthly_contribution_rate: 'Monthly contribution rate',
+  months_to_goal: 'Months to reach goal',
+  projected_savings: 'Projected savings',
+  projected_value: 'Projected value',
+  invested_total: 'Total invested',
+  estimated_gain: 'Estimated gain',
+  savings_before: 'Savings — no change',
+  savings_after: 'Savings — with change',
+  extra_saved: 'Extra saved',
+  remaining_savings: 'Remaining savings',
+  shortfall: 'Shortfall',
+  amount_saved: 'Amount saved',
+  emergency_buffer_months: 'Emergency buffer',
+  goal_progress_pct: 'Goal progress',
+  note: 'Note'
+};
+
+function humanizeKey(k) {
+  return IMPACT_LABELS[k] || k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
-pctSlider.addEventListener('input', () => { pctLabel.textContent = pctSlider.value + '%'; });
+function formatImpactValue(k, v, currency) {
+  if (typeof v === 'string') return v;
+  if (typeof v !== 'number') return String(v);
+  if (k.includes('pct') || k === 'foir_pct') return `${v}%`;
+  if (k.includes('months')) return `${v} mo`;
+  return `${currency}${fmt(v)}`;
+}
+
+function renderSimulateForm() {
+  simSuggestionsEl.innerHTML = SCENARIO_SUGGESTIONS.map(s => `<button type="button" class="chip">${s}</button>`).join('');
+  simSuggestionsEl.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => { scenarioInput.value = chip.textContent; scenarioInput.focus(); });
+  });
+}
 
 function resetSimResults() {
   document.getElementById('simResults').innerHTML = `
     <div class="empty-state">
-      <p>Pick a decision, set a commitment level, and run the simulation to see outcomes here.</p>
+      <p>Describe a scenario in plain language and run the simulation to see a grounded, personalized breakdown here.</p>
     </div>`;
   document.getElementById('pipeline').innerHTML = '';
+}
+
+function timelineDetail(entry, currency) {
+  return Object.entries(entry)
+    .filter(([k]) => k !== 'label' && k !== 'months')
+    .map(([k, v]) => `<div class="timeline-step__row"><span>${humanizeKey(k)}:</span><b>${formatImpactValue(k, v, currency)}</b></div>`)
+    .join('');
+}
+
+function renderSimulationResult(res) {
+  const p = profile();
+  const currency = (p && p.currency) || '₹';
+  const impact = res.financial_impact || {};
+  const isInformational = res.mode === 'informational';
+
+  const impactRows = Object.entries(impact)
+    .filter(([, v]) => v !== null && v !== undefined && typeof v !== 'object')
+    .map(([k, v]) => `<div class="impact-tile"><span class="impact-tile__label">${humanizeKey(k)}</span><span class="impact-tile__value">${formatImpactValue(k, v, currency)}</span></div>`)
+    .join('');
+
+  const traceHtml = (res.stages || []).map(s => `<li><b>${escapeHtml(s.agent)}:</b> ${escapeHtml(s.summary)}</li>`).join('');
+
+  const sections = [];
+
+  sections.push(`
+    <div class="panel__head"><h3>Scenario</h3></div>
+    <p class="sim-scenario-text">“${escapeHtml(res.scenario)}”</p>`);
+
+  sections.push(`
+    <div class="sim-section">
+      <h4 class="sim-section__title">${isInformational ? 'Your current snapshot' : 'Financial impact'}</h4>
+      <div class="impact-grid">${impactRows || '<p class="sim-empty">No quantitative impact could be computed from this scenario.</p>'}</div>
+    </div>`);
+
+  if (!isInformational) {
+    const timelineHtml = (res.timeline || []).map(t => `
+      <div class="timeline-step">
+        <div class="timeline-step__dot"></div>
+        <div class="timeline-step__label">${escapeHtml(t.label)}</div>
+        <div class="timeline-step__body">${timelineDetail(t, currency)}</div>
+      </div>`).join('');
+
+    sections.push(`
+      <div class="sim-section">
+        <h4 class="sim-section__title">Timeline</h4>
+        <div class="sim-timeline">${timelineHtml || '<p class="sim-empty">No timeline applies to this scenario.</p>'}</div>
+      </div>`);
+  }
+
+  if (isInformational) {
+    // Reuses Ask Twin's own markdown-formatted, grounded answer verbatim.
+    const answerHtml = (typeof marked !== 'undefined') ? marked.parse(res.recommendation || '') : `<p>${escapeHtml(res.recommendation)}</p>`;
+    sections.push(`
+      <div class="explanation">
+        <span class="explanation__label">Twin's answer</span>
+        ${answerHtml}
+      </div>`);
+  } else {
+    sections.push(`
+      <div class="explanation">
+        <span class="explanation__label">Recommend agent</span>
+        <p><b>${escapeHtml(res.recommendation)}</b></p>
+        <p>${escapeHtml(res.why)}</p>
+      </div>`);
+
+    if (res.risks && res.risks.length) {
+      const risksHtml = res.risks.map(r => `
+        <li class="alert alert--warn"><span class="alert__dot"></span><p>${escapeHtml(r)}</p></li>`).join('');
+      sections.push(`
+        <div class="sim-section">
+          <h4 class="sim-section__title">Risks / what to watch</h4>
+          <ul class="alert-list">${risksHtml}</ul>
+        </div>`);
+    }
+
+    if (res.assumptions && res.assumptions.length) {
+      const assumptionsHtml = res.assumptions.map(a => `
+        <li class="alert alert--info"><span class="alert__dot"></span><p>${escapeHtml(a)}</p></li>`).join('');
+      sections.push(`
+        <div class="sim-section">
+          <h4 class="sim-section__title">Assumptions</h4>
+          <ul class="alert-list">${assumptionsHtml}</ul>
+        </div>`);
+    }
+
+    if (res.teaching) {
+      sections.push(`
+        <div class="explanation">
+          <span class="explanation__label">Teach agent explains</span>
+          <p>${escapeHtml(res.teaching)}</p>
+        </div>`);
+    }
+  }
+
+  sections.push(`
+    <details class="sim-trace">
+      <summary>How this was computed</summary>
+      <ul>${traceHtml}</ul>
+    </details>
+    <p class="chat-note" style="padding:0; margin-top:14px;">${escapeHtml(res.disclaimer)}</p>`);
+
+  document.getElementById('simResults').innerHTML = sections.join('');
 }
 
 async function runSimulation() {
   const p = profile();
   if (!p) return;
-  const decision = p.decisionTypes.find(d => d.id === decisionSelect.value);
-  const pct = parseInt(pctSlider.value, 10);
+  const scenario = scenarioInput.value.trim();
+  if (!scenario) { scenarioInput.focus(); return; }
 
   const pipelineEl = document.getElementById('pipeline');
   pipelineEl.innerHTML = AGENTS.map(a => `
@@ -161,56 +329,52 @@ async function runSimulation() {
     </div>`).join('');
 
   document.getElementById('runSimBtn').disabled = true;
+  document.getElementById('simResults').innerHTML = '';
 
-  for (const a of AGENTS) {
-    const row = pipelineEl.querySelector(`[data-agent="${a.id}"]`);
-    row.classList.add('is-running');
-    row.querySelector('.pipe-step__state').textContent = 'Running…';
-    state.agentStatus[a.id] = 'running';
-    renderAgents();
-    await new Promise(r => setTimeout(r, 260 + Math.random() * 180));
-    row.classList.remove('is-running');
-    row.classList.add('is-done');
-    row.querySelector('.pipe-step__state').textContent = 'Done';
-    state.agentStatus[a.id] = 'done';
-    renderAgents();
-  }
-
-  // API Call to simulate
+  // API call — Understand/Watch/Simulate/Recommend/Teach/Check all run
+  // server-side, grounded in the same financial context Ask Twin uses.
   let res;
   try {
-      res = await window.api.simulateDecision(decision.id, pct);
+    res = await window.api.simulateScenario(scenario);
   } catch (e) {
-      console.error(e);
-      document.getElementById('runSimBtn').disabled = false;
-      return;
+    console.error(e);
+    document.getElementById('simResults').innerHTML = `
+      <div class="empty-state"><p>Couldn't run that simulation — ${escapeHtml(e.message || 'please try again.')}</p></div>`;
+    document.getElementById('runSimBtn').disabled = false;
+    return;
   }
 
-  const cardsHtml = res.outcomes.map((o) => {
-    const primaryStr = `${o.primary_outcome.toFixed(decision.primaryUnit === '%' || decision.primaryUnit === ' mo' ? 1 : 0)}${decision.primaryUnit}`;
-    const secondaryStr = `${o.secondary_outcome.toFixed(decision.secondaryUnit === '%' || decision.secondaryUnit === ' mo' ? 1 : decision.secondaryUnit === ' Cr' ? 2 : 0)}${decision.secondaryUnit}`;
-    return `
-    <div class="outcome-card ${o.is_best ? 'is-best' : ''}">
-      ${o.is_best ? '<span class="outcome-card__badge">Recommended</span>' : ''}
-      <h4>${o.label}</h4>
-      <div class="outcome-card__row"><span>${decision.primaryLabel}</span><b>${primaryStr}</b></div>
-      <div class="outcome-card__row"><span>${decision.secondaryLabel}</span><b>${secondaryStr}</b></div>
-    </div>`;
-  }).join('');
-  
-  const best = res.outcomes.find(o => o.is_best);
-  const explanation = res.explanation;
+  // Reveal the real backend stage trace one at a time so the pipeline
+  // reflects what actually ran, not a fake spinner.
+  for (const stage of (res.stages || [])) {
+    const id = STAGE_ID_MAP[stage.agent];
+    const row = id && pipelineEl.querySelector(`[data-agent="${id}"]`);
+    if (row) {
+      row.classList.add('is-running');
+      row.querySelector('.pipe-step__state').textContent = 'Running…';
+    }
+    if (id) { state.agentStatus[id] = 'running'; renderAgents(); }
+    await new Promise(r => setTimeout(r, 220 + Math.random() * 140));
+    if (row) {
+      row.classList.remove('is-running');
+      row.classList.add('is-done');
+      row.querySelector('.pipe-step__state').textContent = 'Done';
+      row.title = stage.summary;
+    }
+    if (id) { state.agentStatus[id] = 'done'; renderAgents(); }
+  }
 
-  document.getElementById('simResults').innerHTML = `
-    <div class="panel__head"><h3>Outcomes — ${decision.label}</h3></div>
-    <div class="outcome-grid">${cardsHtml}</div>
-    <div class="explanation">
-      <span class="explanation__label">Teach agent explains</span>
-      <p>${explanation}</p>
-    </div>`;
+  // Informational answers only run a subset of stages (no hypothetical to
+  // calculate) — mark the rest "Skipped" rather than leaving them stuck on
+  // "Queued", which would read as broken.
+  pipelineEl.querySelectorAll('.pipe-step:not(.is-done)').forEach(row => {
+    row.querySelector('.pipe-step__state').textContent = 'Skipped';
+  });
+
+  renderSimulationResult(res);
 
   state.simHistory.unshift({
-    decisionLabel: decision.label, pct, bestLabel: best.label,
+    scenario, scenarioType: res.scenario_type,
     time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
   });
   renderSimHistory();
@@ -230,10 +394,10 @@ function renderSimHistory() {
   el.innerHTML = state.simHistory.map(s => `
     <li>
       <div>
-        <p class="decision-list__title">${s.decisionLabel} <span class="sim-history__pct">(${s.pct}% commitment tested)</span></p>
+        <p class="decision-list__title">${escapeHtml(s.scenario)}</p>
         <p class="decision-list__date">${s.time}</p>
       </div>
-      <span class="tag tag--good">${s.bestLabel}</span>
+      <span class="tag tag--good">${s.scenarioType.replace(/_/g, ' ')}</span>
     </li>`).join('');
 }
 
@@ -338,14 +502,27 @@ function renderSuggestions() {
 function addBubble(who, text) {
   const div = document.createElement('div');
   div.className = 'bubble bubble--' + who;
-  
+
   if (who === 'twin' && typeof marked !== 'undefined') {
     div.innerHTML = marked.parse(text);
   } else {
     div.textContent = text;
   }
-  
+
   chatLog.appendChild(div);
+
+  if (who === 'user') {
+    const action = document.createElement('button');
+    action.type = 'button';
+    action.className = 'bubble-action';
+    action.textContent = 'Simulate this →';
+    action.addEventListener('click', () => {
+      pendingScenarioPrefill = text;
+      switchView('simulate');
+    });
+    chatLog.appendChild(action);
+  }
+
   chatLog.scrollTop = chatLog.scrollHeight;
 }
 
@@ -437,7 +614,7 @@ document.getElementById("btnLogin").addEventListener("click", async () => {
             showObView("view-type");
         }
     } catch (e) {
-        alert("Login failed. Check credentials.");
+        alert("Login failed: " + e.message);
     }
     btn.disabled = false;
     btn.textContent = "Continue";

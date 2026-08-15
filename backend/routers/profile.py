@@ -20,7 +20,7 @@ def get_profile(current_user: User = Depends(get_current_user), db: Session = De
         "key": profile.key,
         "label": profile.label,
         "persona": profile.persona,
-        "currency": profile.currency,
+        "currency": profile.currency or "₹",
         "metrics": profile.metrics,
         "goal": profile.goal,
         "alerts": [{"level": a.level, "text": a.text} for a in profile.alerts],

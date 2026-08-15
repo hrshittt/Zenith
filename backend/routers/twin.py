@@ -5,9 +5,8 @@ import uuid
 
 from backend.database import get_db
 from backend.models.domain import Profile, AuditTrace, ChatSession, ChatMessage
-from backend.schemas.api_models import ChatRequest, ChatResponse, SimulateRequest, SimulateResponse, Outcome, ChatSessionResponse, ChatSessionDetail, ChatMessageModel
+from backend.schemas.api_models import ChatRequest, ChatResponse, SimulateRequest, SimulateResponse, Outcome, ChatSessionResponse, ChatSessionDetail, ChatMessageModel, ScenarioSimulateRequest, ScenarioSimulateResponse
 from typing import List
-from backend.agents.sub_agents import get_groq_client
 from backend.core.auth import get_current_user
 from backend.models.domain import User
 from backend.agents.orchestrator import orchestrator
@@ -140,3 +139,16 @@ def simulate_decision(req: SimulateRequest, current_user: User = Depends(get_cur
     )
 
     return SimulateResponse(outcomes=scored_outcomes, explanation=explanation)
+
+
+@router.post("/simulate-scenario", response_model=ScenarioSimulateResponse)
+def simulate_scenario(req: ScenarioSimulateRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    profile = db.query(Profile).filter(Profile.user_id == current_user.id).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+
+    scenario = (req.scenario or "").strip()
+    if not scenario:
+        raise HTTPException(status_code=400, detail="Please describe a financial scenario to simulate.")
+
+    return orchestrator.run_scenario_simulation(profile, scenario)

@@ -88,3 +88,26 @@ class Outcome(BaseModel):
 class SimulateResponse(BaseModel):
     outcomes: List[Outcome]
     explanation: str
+
+class ScenarioSimulateRequest(BaseModel):
+    scenario: str
+
+class StageTrace(BaseModel):
+    agent: str
+    status: str
+    summary: str
+
+class ScenarioSimulateResponse(BaseModel):
+    scenario: str
+    scenario_type: str
+    mode: str = "scenario"  # "scenario" (Understand->Check pipeline) or "informational" (direct Ask Twin answer)
+    parsed_params: Dict[str, Any]
+    stages: List[StageTrace]
+    financial_impact: Dict[str, Any]
+    timeline: List[Dict[str, Any]]
+    recommendation: str
+    why: str
+    risks: List[str]
+    assumptions: List[str]
+    teaching: str
+    disclaimer: str

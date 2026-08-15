@@ -15,7 +15,7 @@ except Exception:
 
 from backend.market_intelligence.api_clients import YahooFinanceClient, NewsAPIClient, FREDClient, ExchangeRateClient
 from backend.models.domain import MarketData, NewsItem, EconomicIndicator
-from groq import Groq
+from backend.services.gemini_service import gemini_service
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,6 @@ class MarketIntelligenceService:
         self.news_api = NewsAPIClient()
         self.fred = FREDClient()
         self.exchange = ExchangeRateClient()
-        self.groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
     def _get_from_cache(self, key):
         if REDIS_AVAILABLE:
@@ -133,15 +132,13 @@ class MarketIntelligenceService:
         return mock_data.get(name, 5.0)
 
     def analyze_news_sentiment(self, text: str) -> str:
+        if not gemini_service.available():
+            return "neutral"
         try:
             # Fast sentiment check using LLM
             prompt = f"Analyze the sentiment of this text strictly in one word: 'positive', 'neutral', or 'negative'. Text: {text}"
-            response = self.groq_client.chat.completions.create(
-                messages=[{"role": "user", "content": prompt}],
-                model="llama-3.1-8b-instant",
-                max_tokens=10,
-            )
-            return response.choices[0].message.content.strip().lower()
+            result = gemini_service.generate(prompt, temperature=0.0, max_output_tokens=10)
+            return result.strip().lower()
         except Exception:
             return "neutral"
 

@@ -1,5 +1,5 @@
 
-const API_BASE = "http://localhost:8000";
+const API_BASE = "http://127.0.0.1:8000";
 
 function getHeaders() {
     const headers = { "Content-Type": "application/json" };
@@ -58,6 +58,19 @@ async function simulateDecision(decisionId, commitmentPct) {
     return await res.json();
 }
 
+async function simulateScenario(scenario) {
+    const res = await fetch(`${API_BASE}/twin/simulate-scenario`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({ scenario })
+    });
+    if (!res.ok) {
+        const detail = await res.json().catch(() => null);
+        throw new Error((detail && detail.detail) || "Simulation failed");
+    }
+    return await res.json();
+}
+
 async function parseStatement(file) {
     const formData = new FormData();
     formData.append("file", file);
@@ -105,6 +118,7 @@ window.api = {
     getChatSessions,
     getChatSession,
     simulateDecision,
+    simulateScenario,
     parseStatement,
     confirmProfile,
     onboardingChat

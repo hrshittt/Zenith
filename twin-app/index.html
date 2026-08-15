@@ -246,15 +246,12 @@
             </div>
 
             <label class="field">
-              <span>Decision</span>
-              <select id="decisionSelect"></select>
+              <span>What financial scenario do you want to explore?</span>
+              <textarea id="scenarioInput" class="ob-input sim-scenario-input" rows="4"
+                placeholder="e.g. What happens if I invest ₹20,000 every month for 3 years?"></textarea>
             </label>
 
-            <label class="field">
-              <span>Commitment level <b id="pctLabel">50%</b></span>
-              <input type="range" id="pctSlider" min="0" max="100" value="50">
-              <div class="field__scale"><span>Hold</span><span>Full commit</span></div>
-            </label>
+            <div class="sim-chip-row" id="simSuggestions"></div>
 
             <button class="btn btn--primary btn--block" id="runSimBtn">Run simulation</button>
 
@@ -263,7 +260,7 @@
 
           <div class="sim-results" id="simResults">
             <div class="empty-state">
-              <p>Pick a decision, set a commitment level, and run the simulation to see outcomes here.</p>
+              <p>Describe a scenario in plain language and run the simulation to see a grounded, personalized breakdown here.</p>
             </div>
           </div>
         </div>
