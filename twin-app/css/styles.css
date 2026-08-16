@@ -444,6 +444,8 @@ ul.sim-history{ list-style:none; margin:0; padding:0; }
 .status--running{ background:var(--accent-tint); color:var(--accent); }
 .status--done{ background:var(--primary-tint); color:var(--primary-dark); }
 
+.chat-menu-btn:hover { background: var(--surface-2) !important; }
+
 /* ============ Chat ============ */
 .chat-panel{
   max-width:720px;

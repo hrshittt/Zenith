@@ -111,6 +111,25 @@ async function onboardingChat(messages) {
     return await res.json();
 }
 
+async function renameChatSession(sessionId, title) {
+    const res = await fetch(`${API_BASE}/twin/chats/${sessionId}`, {
+        method: "PUT",
+        headers: getHeaders(),
+        body: JSON.stringify({ title })
+    });
+    if (!res.ok) throw new Error("Failed to rename chat");
+    return await res.json();
+}
+
+async function deleteChatSession(sessionId) {
+    const res = await fetch(`${API_BASE}/twin/chats/${sessionId}`, {
+        method: "DELETE",
+        headers: getHeaders()
+    });
+    if (!res.ok) throw new Error("Failed to delete chat");
+    return await res.json();
+}
+
 window.api = {
     login,
     fetchProfile,
@@ -121,6 +140,8 @@ window.api = {
     simulateScenario,
     parseStatement,
     confirmProfile,
-    onboardingChat
+    onboardingChat,
+    renameChatSession,
+    deleteChatSession
 };
 

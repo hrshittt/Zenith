@@ -5,7 +5,7 @@ import uuid
 
 from backend.database import get_db
 from backend.models.domain import Profile, AuditTrace, ChatSession, ChatMessage
-from backend.schemas.api_models import ChatRequest, ChatResponse, SimulateRequest, SimulateResponse, Outcome, ChatSessionResponse, ChatSessionDetail, ChatMessageModel, ScenarioSimulateRequest, ScenarioSimulateResponse
+from backend.schemas.api_models import ChatRequest, ChatResponse, SimulateRequest, SimulateResponse, Outcome, ChatSessionResponse, ChatSessionDetail, ChatMessageModel, ScenarioSimulateRequest, ScenarioSimulateResponse, ChatRenameRequest, GenericResponse
 from typing import List
 from backend.core.auth import get_current_user
 from backend.models.domain import User
@@ -35,6 +35,28 @@ def get_chat_session(session_id: str, current_user: User = Depends(get_current_u
         "created_at": session.created_at.isoformat(),
         "messages": [{"role": m.role, "content": m.content} for m in session.messages]
     }
+
+@router.delete("/chats/{session_id}", response_model=GenericResponse)
+def delete_chat_session(session_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    profile = db.query(Profile).filter(Profile.user_id == current_user.id).first()
+    session = db.query(ChatSession).filter(ChatSession.id == session_id, ChatSession.profile_id == profile.id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+        
+    db.delete(session)
+    db.commit()
+    return {"success": True, "message": "Session deleted"}
+
+@router.put("/chats/{session_id}", response_model=GenericResponse)
+def rename_chat_session(session_id: str, req: ChatRenameRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    profile = db.query(Profile).filter(Profile.user_id == current_user.id).first()
+    session = db.query(ChatSession).filter(ChatSession.id == session_id, ChatSession.profile_id == profile.id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+        
+    session.title = req.title
+    db.commit()
+    return {"success": True, "message": "Session renamed"}
 
 @router.post("/chat")
 def chat_with_twin(req: ChatRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):

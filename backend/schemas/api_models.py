@@ -65,6 +65,13 @@ class ChatSessionResponse(BaseModel):
 class ChatSessionDetail(ChatSessionResponse):
     messages: List[ChatMessageModel]
 
+class ChatRenameRequest(BaseModel):
+    title: str
+
+class GenericResponse(BaseModel):
+    success: bool
+    message: Optional[str] = None
+
 class ChatResponse(BaseModel):
     session_id: str
     answer: str

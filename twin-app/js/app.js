@@ -436,10 +436,19 @@ async function loadChatSessions() {
     const sessions = await window.api.getChatSessions();
     if(chatSessionList) {
         chatSessionList.innerHTML = sessions.map(s => `
-          <li style="padding: 8px; border-radius: 4px; cursor: pointer; font-size: 13px; background: ${s.id === currentSessionId ? 'var(--bg-subtle)' : 'transparent'}" 
+          <li style="padding: 8px; border-radius: 4px; cursor: pointer; font-size: 13px; background: ${s.id === currentSessionId ? 'var(--bg-subtle)' : 'transparent'}; position: relative;" 
               onclick="switchSession('${s.id}')">
-            <div style="font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${s.title}</div>
-            <div style="font-size: 11px; color: var(--ink-faint); margin-top: 2px;">${new Date(s.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;" title="${escapeHtml(s.title)}">${escapeHtml(s.title)}</div>
+              <div style="position: relative; margin-left: 8px;">
+                <button onclick="toggleChatMenu('${s.id}')" style="background:none; border:none; cursor:pointer; font-size:16px; color:var(--ink-faint); padding:0 4px; line-height: 1;">⋮</button>
+                <div id="chat-menu-${s.id}" class="chat-menu-dropdown" style="display:none; position: absolute; right: 0; top: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 100; min-width: 100px; overflow: hidden;">
+                  <button onclick="event.stopPropagation(); toggleChatMenu('${s.id}'); renameSession('${s.id}', '${escapeHtml(s.title).replace(/'/g, "\\'")}')" class="chat-menu-btn" style="display:block; width:100%; text-align:left; padding: 8px 12px; background:none; border:none; border-bottom: 1px solid var(--line); font-size:12px; cursor:pointer; color:var(--ink);">Rename</button>
+                  <button onclick="event.stopPropagation(); toggleChatMenu('${s.id}'); deleteSession('${s.id}')" class="chat-menu-btn" style="display:block; width:100%; text-align:left; padding: 8px 12px; background:none; border:none; font-size:12px; cursor:pointer; color:var(--warn);">Delete</button>
+                </div>
+              </div>
+            </div>
+            <div style="font-size: 11px; color: var(--ink-faint); margin-top: 4px;">${new Date(s.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
           </li>
         `).join('');
     }
@@ -447,6 +456,53 @@ async function loadChatSessions() {
     console.error(e);
   }
 }
+
+window.toggleChatMenu = function(id) {
+    event.stopPropagation();
+    const menu = document.getElementById('chat-menu-' + id);
+    const isVisible = menu.style.display === 'block';
+    
+    // hide all other menus
+    document.querySelectorAll('.chat-menu-dropdown').forEach(el => el.style.display = 'none');
+    
+    if (!isVisible) {
+        menu.style.display = 'block';
+    }
+}
+
+document.addEventListener('click', () => {
+    document.querySelectorAll('.chat-menu-dropdown').forEach(el => el.style.display = 'none');
+});
+
+window.renameSession = async function(id, currentTitle) {
+  const newTitle = prompt("Enter new title for the chat:", currentTitle);
+  if (newTitle && newTitle.trim() !== "" && newTitle !== currentTitle) {
+    try {
+      await window.api.renameChatSession(id, newTitle.trim());
+      loadChatSessions();
+      if (currentSessionId === id) {
+          // If needed, update current session's UI beyond the sidebar list
+      }
+    } catch(e) {
+      alert("Failed to rename chat session.");
+    }
+  }
+};
+
+window.deleteSession = async function(id) {
+  if (confirm("Are you sure you want to delete this chat session?")) {
+    try {
+      await window.api.deleteChatSession(id);
+      if (currentSessionId === id) {
+        currentSessionId = null;
+        resetChat();
+      }
+      loadChatSessions();
+    } catch(e) {
+      alert("Failed to delete chat session.");
+    }
+  }
+};
 
 window.switchSession = async function(id) {
   currentSessionId = id;
