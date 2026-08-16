@@ -52,6 +52,7 @@ class ProfileResponse(BaseModel):
 class ChatRequest(BaseModel):
     message: str
     session_id: Optional[str] = None
+    profile_key: str = "individual"
 
 class ChatMessageModel(BaseModel):
     role: str
@@ -79,6 +80,10 @@ class ChatResponse(BaseModel):
     sources: List[Dict[str, str]]
     reasoning_trace: List[Dict[str, str]]
     disclaimer: str
+    # Optional structured chart data for numeric/trend questions (Startup's Ask
+    # Twin only, for now — always built from already-computed Financial Twin
+    # metrics, never invented by the LLM). Individual leaves this unset.
+    visualization: Optional[Dict[str, Any]] = None
 
 class SimulateRequest(BaseModel):
     decision_id: str
@@ -98,6 +103,7 @@ class SimulateResponse(BaseModel):
 
 class ScenarioSimulateRequest(BaseModel):
     scenario: str
+    profile_key: str = "individual"
 
 class StageTrace(BaseModel):
     agent: str
@@ -118,3 +124,10 @@ class ScenarioSimulateResponse(BaseModel):
     assumptions: List[str]
     teaching: str
     disclaimer: str
+    # Optional — Startup only. Full-resolution baseline-vs-scenario cash series
+    # for the Scenario Projection chart, and deterministic alternative-option
+    # comparisons (e.g. "Don't hire" / "Hire 3" / "Hire 5"). Individual leaves
+    # these unset; both are built entirely from startup_engine/startup_scenario,
+    # never from the LLM.
+    timeline_series: Optional[Dict[str, Any]] = None
+    comparison_variants: Optional[List[Dict[str, Any]]] = None

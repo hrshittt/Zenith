@@ -35,6 +35,20 @@
           </svg>
           Overview
         </button>
+        <button class="navitem" data-view="hisaab" data-persona="startup">
+          <svg viewBox="0 0 20 20" fill="none">
+            <rect x="2.5" y="4" width="15" height="12" rx="1.5" stroke="currentColor" stroke-width="1.4" />
+            <path d="M2.5 8h15M6 12h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+          </svg>
+          Hisaab
+        </button>
+        <button class="navitem" data-view="ask">
+          <svg viewBox="0 0 20 20" fill="none">
+            <path d="M3 4.5h14v9H8.5L5 16.5v-3H3v-9Z" stroke="currentColor" stroke-width="1.4"
+              stroke-linejoin="round" />
+          </svg>
+          Ask Twin
+        </button>
         <button class="navitem" data-view="simulate">
           <svg viewBox="0 0 20 20" fill="none">
             <path d="M3 6h14M3 10h14M3 14h9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
@@ -44,14 +58,21 @@
           </svg>
           Simulate
         </button>
-        <button class="navitem" data-view="ask">
+        <button class="navitem" data-view="alerts" data-persona="startup">
           <svg viewBox="0 0 20 20" fill="none">
-            <path d="M3 4.5h14v9H8.5L5 16.5v-3H3v-9Z" stroke="currentColor" stroke-width="1.4"
-              stroke-linejoin="round" />
+            <path d="M10 2.5 17.5 16h-15L10 2.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
+            <path d="M10 8v3.5M10 13.5v.1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
           </svg>
-          Ask Twin
+          Alerts
         </button>
-        <button class="navitem" data-view="agents">
+        <button class="navitem" data-view="reports" data-persona="startup">
+          <svg viewBox="0 0 20 20" fill="none">
+            <path d="M5 2.5h7l3 3v12H5v-15Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
+            <path d="M7.5 9h5M7.5 12h5M7.5 15h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+          </svg>
+          Reports
+        </button>
+        <button class="navitem" data-view="agents" data-persona="individual">
           <svg viewBox="0 0 20 20" fill="none">
             <circle cx="6.5" cy="6.5" r="2.3" stroke="currentColor" stroke-width="1.4" />
             <circle cx="14" cy="6.5" r="2.3" stroke="currentColor" stroke-width="1.4" />
@@ -60,7 +81,7 @@
           </svg>
           Agent team
         </button>
-        <button class="navitem" data-view="about">
+        <button class="navitem" data-view="about" data-persona="individual">
           <svg viewBox="0 0 20 20" fill="none">
             <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.4" />
             <path d="M10 9.2v4.3M10 6.8v.1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
@@ -193,6 +214,129 @@
         </div>
       </section>
 
+      <!-- ================= STARTUP ONBOARDING WIZARD ================= -->
+      <section class="view" id="view-startup-onboard">
+        <div class="onboarding-card wizard" style="max-width:640px; text-align:left;">
+          <h2 style="text-align:center;">Build Your Startup Twin</h2>
+          <p style="text-align:center;">A few details so Tathya can ground every number in your real business.</p>
+
+          <div class="wizard__steps">
+            <span class="wizard__step is-active" data-step="1">1. Founder &amp; Company</span>
+            <span class="wizard__step" data-step="2">2. Revenue &amp; Expenses</span>
+            <span class="wizard__step" data-step="3">3. Cash, Debt &amp; Funding</span>
+            <span class="wizard__step" data-step="4">4. Team, Goals &amp; Decision</span>
+          </div>
+
+          <form id="suWizardForm">
+            <!-- Step 1 -->
+            <div class="wizard-step is-active" data-step="1">
+              <h4 class="wizard-step__title">Founder</h4>
+              <div class="field-row">
+                <label class="field"><span>Full name *</span><input type="text" id="suFounderName" class="ob-input" required></label>
+                <label class="field"><span>Email *</span><input type="email" id="suFounderEmail" class="ob-input" required></label>
+              </div>
+              <div class="field-row">
+                <label class="field"><span>Mobile</span><input type="tel" id="suFounderMobile" class="ob-input"></label>
+                <label class="field"><span>Preferred language</span><input type="text" id="suFounderLang" class="ob-input" placeholder="English"></label>
+              </div>
+              <h4 class="wizard-step__title">Company</h4>
+              <div class="field-row">
+                <label class="field"><span>Company name *</span><input type="text" id="suCompanyName" class="ob-input" required></label>
+                <label class="field"><span>Industry</span><input type="text" id="suIndustry" class="ob-input" placeholder="e.g. Fintech, SaaS"></label>
+              </div>
+              <div class="field-row">
+                <label class="field"><span>Business model</span><input type="text" id="suBusinessModel" class="ob-input" placeholder="e.g. B2B SaaS, Marketplace"></label>
+                <label class="field"><span>Founded year</span><input type="number" id="suFoundedYear" class="ob-input" placeholder="2024"></label>
+              </div>
+              <div class="field-row">
+                <label class="field"><span>Stage</span><input type="text" id="suStage" class="ob-input" placeholder="Pre-seed, Seed, Series A…"></label>
+                <label class="field"><span>Location</span><input type="text" id="suLocation" class="ob-input" placeholder="Bengaluru, India"></label>
+              </div>
+              <div class="field-row">
+                <label class="field"><span>Website</span><input type="text" id="suWebsite" class="ob-input" placeholder="https://…"></label>
+                <label class="field"><span>Current headcount</span><input type="number" id="suHeadcount" class="ob-input" min="0"></label>
+              </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="wizard-step" data-step="2">
+              <h4 class="wizard-step__title">Revenue</h4>
+              <label class="checkbox-field"><input type="checkbox" id="suPreRevenue"> We're pre-revenue</label>
+              <div class="field-row">
+                <label class="field"><span>Monthly revenue (₹)</span><input type="number" id="suMonthlyRevenue" class="ob-input" min="0"></label>
+                <label class="field"><span>Paying customers</span><input type="number" id="suPayingCustomers" class="ob-input" min="0"></label>
+              </div>
+              <div class="field-row">
+                <label class="field"><span>Revenue streams (comma separated)</span><input type="text" id="suRevenueStreams" class="ob-input" placeholder="Subscriptions, Setup fees"></label>
+                <label class="field"><span>Est. monthly revenue growth (%)</span><input type="number" id="suRevenueGrowth" class="ob-input" step="0.1" placeholder="Leave blank if unsure"></label>
+              </div>
+              <h4 class="wizard-step__title">Expenses</h4>
+              <div class="field-row">
+                <label class="field"><span>Fixed costs / mo (₹)</span><input type="number" id="suFixedCosts" class="ob-input" min="0"></label>
+                <label class="field"><span>Variable costs / mo (₹)</span><input type="number" id="suVariableCosts" class="ob-input" min="0"></label>
+              </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="wizard-step" data-step="3">
+              <h4 class="wizard-step__title">Cash</h4>
+              <div class="field-row">
+                <label class="field"><span>Current cash (₹) *</span><input type="number" id="suCurrentCash" class="ob-input" min="0" required></label>
+                <label class="field"><span>Monthly burn (₹, if not itemized above)</span><input type="number" id="suMonthlyBurn" class="ob-input" min="0"></label>
+              </div>
+              <h4 class="wizard-step__title">Debt</h4>
+              <label class="field"><span>Business loans / debt outstanding (₹)</span><input type="number" id="suDebt" class="ob-input" min="0"></label>
+              <h4 class="wizard-step__title">Funding</h4>
+              <div class="field-row">
+                <label class="field"><span>Total funding raised (₹)</span><input type="number" id="suTotalFunding" class="ob-input" min="0"></label>
+                <label class="field"><span>Last round</span><input type="text" id="suLastRound" class="ob-input" placeholder="Seed, Pre-seed…"></label>
+              </div>
+              <label class="checkbox-field"><input type="checkbox" id="suFundraising"> Currently fundraising</label>
+              <label class="field"><span>Fundraising target (₹)</span><input type="number" id="suFundraisingTarget" class="ob-input" min="0"></label>
+            </div>
+
+            <!-- Step 4 -->
+            <div class="wizard-step" data-step="4">
+              <h4 class="wizard-step__title">Team</h4>
+              <div class="field-row">
+                <label class="field"><span>Planned new hires</span><input type="number" id="suPlannedHires" class="ob-input" min="0"></label>
+                <label class="field"><span>Fully-loaded cost per hire / mo (₹)</span><input type="number" id="suCostPerHire" class="ob-input" min="0"></label>
+              </div>
+              <h4 class="wizard-step__title">Goals</h4>
+              <div class="goal-input-row">
+                <label class="checkbox-field"><input type="checkbox" id="suGoalRunway"> Extend runway to</label>
+                <input type="number" id="suGoalRunwayTarget" class="ob-input" placeholder="months" style="max-width:120px;">
+              </div>
+              <div class="goal-input-row">
+                <label class="checkbox-field"><input type="checkbox" id="suGoalRevenue"> Reach monthly revenue of ₹</label>
+                <input type="number" id="suGoalRevenueTarget" class="ob-input" placeholder="amount" style="max-width:160px;">
+              </div>
+              <div class="goal-input-row">
+                <label class="checkbox-field"><input type="checkbox" id="suGoalFundraise"> Raise ₹</label>
+                <input type="number" id="suGoalFundraiseTarget" class="ob-input" placeholder="target amount" style="max-width:160px;">
+              </div>
+              <div class="goal-input-row">
+                <label class="checkbox-field"><input type="checkbox" id="suGoalProfitability"> Reach profitability</label>
+              </div>
+              <div class="goal-input-row">
+                <label class="checkbox-field"><input type="checkbox" id="suGoalCustom"> Custom goal:</label>
+                <input type="text" id="suGoalCustomLabel" class="ob-input" placeholder="e.g. Launch v2 product" style="max-width:220px;">
+              </div>
+              <h4 class="wizard-step__title">Current financial decision</h4>
+              <label class="field"><span>What are you currently weighing?</span>
+                <textarea id="suDecision" class="ob-input" rows="3" placeholder="e.g. Hire 5 people, Raise ₹2 Cr, Increase marketing spend"></textarea>
+              </label>
+            </div>
+          </form>
+
+          <div class="wizard__nav">
+            <button type="button" class="btn" id="suBtnBack" style="visibility:hidden;">Back</button>
+            <button type="button" class="btn btn--primary" id="suBtnNext">Next</button>
+          </div>
+          <p id="suWizardError" style="color:var(--warn); font-size:12.5px; margin-top:10px; display:none;"></p>
+        </div>
+      </section>
+
       <!-- ================= AI ONBOARDING CHAT VIEW ================= -->
       <section class="view" id="view-ai-onboard">
         <div class="chat-panel" style="margin: 0 auto; min-height: 500px; width: 100%; max-width: 600px;">
@@ -218,21 +362,81 @@
 
         <div class="stat-grid" id="statGrid"></div>
 
+        <!-- Startup-only extra panels (hidden/empty for Individual) -->
+        <div id="startupOverviewExtra"></div>
+
         <div class="grid-2col">
           <div class="panel">
             <div class="panel__head">
-              <h3>Recent decisions</h3>
+              <h3 id="historyPanelTitle">Recent decisions</h3>
             </div>
             <ul class="decision-list" id="historyList"></ul>
           </div>
 
           <div class="panel">
             <div class="panel__head">
-              <h3>Watch — risk alerts</h3>
+              <h3 id="alertPanelTitle">Watch — risk alerts</h3>
               <span class="dot dot--live"></span>
             </div>
             <ul class="alert-list" id="alertList"></ul>
           </div>
+        </div>
+      </section>
+
+      <!-- ================= HISAAB VIEW (Startup) ================= -->
+      <section class="view" id="view-hisaab">
+        <div class="hisaab-summary" id="hisaabSummary"></div>
+
+        <div class="panel" style="margin-top:16px;">
+          <div class="panel__head">
+            <h3>Add a transaction</h3>
+          </div>
+          <form id="hisaabForm" class="hisaab-form">
+            <select id="hxType" class="ob-input">
+              <option value="in">Money in</option>
+              <option value="out">Money out</option>
+            </select>
+            <input type="text" id="hxCategory" class="ob-input" placeholder="Category (e.g. Payroll, Revenue)" required>
+            <input type="number" id="hxAmount" class="ob-input" placeholder="Amount (₹)" min="0" step="0.01" required>
+            <input type="text" id="hxDescription" class="ob-input" placeholder="Description (optional)">
+            <button type="submit" class="btn btn--primary">Add</button>
+          </form>
+        </div>
+
+        <div class="panel" style="margin-top:16px;">
+          <div class="panel__head">
+            <h3>Transactions</h3>
+          </div>
+          <ul class="hisaab-list" id="hisaabList"></ul>
+        </div>
+      </section>
+
+      <!-- ================= ALERTS VIEW (Startup) ================= -->
+      <section class="view" id="view-alerts">
+        <div class="panel">
+          <div class="panel__head">
+            <h3>Risk alerts</h3>
+            <span class="dot dot--live"></span>
+          </div>
+          <ul class="alert-list" id="alertsFullList"></ul>
+        </div>
+      </section>
+
+      <!-- ================= REPORTS VIEW (Startup) ================= -->
+      <section class="view" id="view-reports">
+        <div class="panel">
+          <div class="panel__head">
+            <h3>Daily financial brief</h3>
+          </div>
+          <div id="dailyBriefFull"></div>
+        </div>
+
+        <div class="panel" style="margin-top:16px;">
+          <div class="panel__head">
+            <h3>Weekly financial health report</h3>
+            <button class="btn" id="btnRefreshWeekly" style="padding:6px 12px; font-size:12.5px; min-height:0;">Refresh</button>
+          </div>
+          <div id="weeklyReport"></div>
         </div>
       </section>
 
@@ -346,9 +550,10 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <script src="js/data.js?v=5"></script>
-  <script src="js/api.js?v=5"></script>
-  <script src="js/app.js?v=5"></script>
+  <script src="js/data.js?v=6"></script>
+  <script src="js/api.js?v=6"></script>
+  <script src="js/startup.js?v=6"></script>
+  <script src="js/app.js?v=6"></script>
 </body>
 
 </html>

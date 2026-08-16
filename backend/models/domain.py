@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, JSON
+from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, Date, ForeignKey, JSON, Text, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -31,6 +31,10 @@ class Profile(Base):
     history = relationship("DecisionHistory", back_populates="profile")
     audit_traces = relationship("AuditTrace", back_populates="profile")
     chat_sessions = relationship("ChatSession", back_populates="profile")
+    startup_profile = relationship("StartupProfile", back_populates="profile", uselist=False, cascade="all, delete-orphan")
+    startup_snapshots = relationship("StartupMetricSnapshot", back_populates="profile", cascade="all, delete-orphan")
+    startup_transactions = relationship("StartupTransaction", back_populates="profile", cascade="all, delete-orphan")
+    startup_decisions = relationship("StartupDecisionLog", back_populates="profile", cascade="all, delete-orphan")
 
 class Alert(Base):
     __tablename__ = "alerts"
@@ -106,5 +110,120 @@ class ChatMessage(Base):
     role = Column(String) # 'user' or 'twin'
     content = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)
-    
+
     session = relationship("ChatSession", back_populates="messages")
+
+
+# ---------------------------------------------------------------------------
+# Startup journey — kept fully separate from the Individual profile's
+# metrics/goal/decisionTypes JSON blobs above. All financial fields are
+# nullable: onboarding never fabricates a value the founder didn't provide.
+# ---------------------------------------------------------------------------
+
+class StartupProfile(Base):
+    __tablename__ = "startup_profiles"
+    id = Column(Integer, primary_key=True, index=True)
+    profile_id = Column(Integer, ForeignKey("profiles.id"), unique=True, index=True)
+
+    # Founder
+    founder_name = Column(String)
+    founder_email = Column(String)
+    founder_mobile = Column(String)
+    preferred_language = Column(String)
+
+    # Company
+    company_name = Column(String)
+    industry = Column(String)
+    business_model = Column(String)
+    founded_year = Column(Integer)
+    stage = Column(String)
+    location = Column(String)
+    website = Column(String)
+    headcount = Column(Integer)  # current headcount — also Team > Current Headcount
+
+    # Revenue
+    is_pre_revenue = Column(Boolean, default=False)
+    monthly_revenue = Column(Float)
+    revenue_streams = Column(JSON, default=[])
+    revenue_growth_pct_input = Column(Float)  # founder-estimated MoM growth %, used until real history exists
+    paying_customers = Column(Integer)
+
+    # Expenses
+    fixed_costs = Column(Float)
+    variable_costs = Column(Float)
+
+    # Cash
+    current_cash = Column(Float)
+    monthly_burn_input = Column(Float)  # fallback gross burn if fixed/variable costs weren't itemized
+
+    # Debt
+    business_loans_debt = Column(Float)
+
+    # Funding
+    total_funding = Column(Float)
+    last_round = Column(String)
+    currently_fundraising = Column(Boolean, default=False)
+    fundraising_target = Column(Float)
+
+    # Team
+    planned_hires = Column(Integer)
+    cost_per_hire = Column(Float)  # fully-loaded monthly cost per hire
+
+    # Goals — list of {type, label, target_value, target_unit, target_date}
+    goals = Column(JSON, default=[])
+
+    # Current financial decision the founder is weighing at onboarding time
+    current_decision = Column(String)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    profile = relationship("Profile", back_populates="startup_profile")
+
+
+class StartupMetricSnapshot(Base):
+    __tablename__ = "startup_metric_snapshots"
+    __table_args__ = (UniqueConstraint("profile_id", "snapshot_date", name="uq_startup_snapshot_profile_date"),)
+    id = Column(Integer, primary_key=True, index=True)
+    profile_id = Column(Integer, ForeignKey("profiles.id"), index=True)
+    snapshot_date = Column(Date, index=True)
+    cash = Column(Float)
+    gross_burn = Column(Float)
+    net_burn = Column(Float)
+    revenue = Column(Float)
+    runway_months = Column(Float)
+    financial_health_score = Column(Float)
+    raw = Column(JSON, default={})  # full computed metric bundle, for report reuse
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    profile = relationship("Profile", back_populates="startup_snapshots")
+
+
+class StartupTransaction(Base):
+    """Hisaab ledger — money in / money out, categorized."""
+    __tablename__ = "startup_transactions"
+    id = Column(Integer, primary_key=True, index=True)
+    profile_id = Column(Integer, ForeignKey("profiles.id"), index=True)
+    type = Column(String)  # 'in' | 'out'
+    category = Column(String)
+    amount = Column(Float)
+    description = Column(String)
+    txn_date = Column(Date, default=lambda: datetime.utcnow().date())
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    profile = relationship("Profile", back_populates="startup_transactions")
+
+
+class StartupDecisionLog(Base):
+    """Recent Decisions — every onboarded/simulated startup decision, with its computed outcome."""
+    __tablename__ = "startup_decision_log"
+    id = Column(Integer, primary_key=True, index=True)
+    profile_id = Column(Integer, ForeignKey("profiles.id"), index=True)
+    title = Column(String)
+    decision_type = Column(String)
+    scenario_text = Column(String)
+    result_summary = Column(JSON, default={})
+    tag = Column(String)  # 'good' | 'warn' | 'neutral'
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    profile = relationship("Profile", back_populates="startup_decisions")

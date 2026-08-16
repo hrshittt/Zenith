@@ -42,12 +42,19 @@ navItems.forEach(btn => {
   btn.addEventListener('click', () => switchView(btn.dataset.view));
 });
 
+function isStartup() {
+  return !!(profile() && profile().key === 'startup');
+}
+
 function switchView(name) {
   views.forEach(v => v.classList.remove('is-active'));
   document.getElementById('view-' + name).classList.add('is-active');
   navItems.forEach(b => b.classList.toggle('is-active', b.dataset.view === name));
-  document.getElementById('topbarTitle').textContent = titles[name][0];
-  document.getElementById('topbarSub').textContent = titles[name][1];
+  const titleSet = (isStartup() && typeof STARTUP_TITLES !== 'undefined' && STARTUP_TITLES[name]) ? STARTUP_TITLES[name] : titles[name];
+  if (titleSet) {
+    document.getElementById('topbarTitle').textContent = titleSet[0];
+    document.getElementById('topbarSub').textContent = titleSet[1];
+  }
   if (name === 'ask') {
       resetChat();
       loadChatSessions();
@@ -56,6 +63,18 @@ function switchView(name) {
       scenarioInput.value = pendingScenarioPrefill;
       pendingScenarioPrefill = null;
       scenarioInput.focus();
+  }
+  if (name === 'overview' && isStartup()) {
+      loadStartupOverviewAndRender();
+  }
+  if (name === 'hisaab' && isStartup()) {
+      loadHisaabAndRender();
+  }
+  if (name === 'alerts' && isStartup()) {
+      renderAlertsView();
+  }
+  if (name === 'reports' && isStartup()) {
+      renderReportsView();
   }
 }
 
@@ -74,7 +93,12 @@ async function loadProfileAndRender() {
     try {
         currentProfile = await window.api.fetchProfile();
         if (currentProfile) {
-            renderOverview();
+            applyPersonaNav(currentProfile.key === 'startup' ? 'startup' : 'individual');
+            if (currentProfile.key === 'startup') {
+                await loadStartupOverviewAndRender();
+            } else {
+                renderOverview();
+            }
             renderSimulateForm();
             resetSimResults();
             renderSimHistory();
@@ -193,12 +217,15 @@ function formatImpactValue(k, v, currency) {
   if (typeof v === 'string') return v;
   if (typeof v !== 'number') return String(v);
   if (k.includes('pct') || k === 'foir_pct') return `${v}%`;
-  if (k.includes('months')) return `${v} mo`;
+  if (k.includes('months') || k.startsWith('runway')) return `${v} mo`;
+  if (k.startsWith('financial_health')) return `${v}/100`;
+  if (k === 'headcount_added' || k === 'headcount') return `${v}`;
   return `${currency}${fmt(v)}`;
 }
 
 function renderSimulateForm() {
-  simSuggestionsEl.innerHTML = SCENARIO_SUGGESTIONS.map(s => `<button type="button" class="chip">${s}</button>`).join('');
+  const suggestions = (isStartup() && typeof STARTUP_SCENARIO_SUGGESTIONS !== 'undefined') ? STARTUP_SCENARIO_SUGGESTIONS : SCENARIO_SUGGESTIONS;
+  simSuggestionsEl.innerHTML = suggestions.map(s => `<button type="button" class="chip">${s}</button>`).join('');
   simSuggestionsEl.querySelectorAll('.chip').forEach(chip => {
     chip.addEventListener('click', () => { scenarioInput.value = chip.textContent; scenarioInput.focus(); });
   });
@@ -243,6 +270,19 @@ function renderSimulationResult(res) {
       <h4 class="sim-section__title">${isInformational ? 'Your current snapshot' : 'Financial impact'}</h4>
       <div class="impact-grid">${impactRows || '<p class="sim-empty">No quantitative impact could be computed from this scenario.</p>'}</div>
     </div>`);
+
+  if (!isInformational && impact.goal_impact && impact.goal_impact.length) {
+    const goalRows = impact.goal_impact.map(g => {
+      const before = (g.progress_before_pct !== null && g.progress_before_pct !== undefined) ? `${g.progress_before_pct.toFixed(0)}%` : '—';
+      const after = (g.progress_after_pct !== null && g.progress_after_pct !== undefined) ? `${g.progress_after_pct.toFixed(0)}%` : '—';
+      return `<div class="impact-tile"><span class="impact-tile__label">${escapeHtml(g.label)}</span><span class="impact-tile__value">${before} → ${after}</span></div>`;
+    }).join('');
+    sections.push(`
+      <div class="sim-section">
+        <h4 class="sim-section__title">Goal impact</h4>
+        <div class="impact-grid">${goalRows}</div>
+      </div>`);
+  }
 
   if (!isInformational) {
     const timelineHtml = (res.timeline || []).map(t => `
@@ -335,7 +375,7 @@ async function runSimulation() {
   // server-side, grounded in the same financial context Ask Twin uses.
   let res;
   try {
-    res = await window.api.simulateScenario(scenario);
+    res = await window.api.simulateScenario(scenario, state.profileKey);
   } catch (e) {
     console.error(e);
     document.getElementById('simResults').innerHTML = `
@@ -371,7 +411,11 @@ async function runSimulation() {
     row.querySelector('.pipe-step__state').textContent = 'Skipped';
   });
 
-  renderSimulationResult(res);
+  if (isStartup() && typeof renderStartupSimulationResult === 'function') {
+    renderStartupSimulationResult(res);
+  } else {
+    renderSimulationResult(res);
+  }
 
   state.simHistory.unshift({
     scenario, scenarioType: res.scenario_type,
@@ -433,7 +477,7 @@ const SUGGESTIONS = [
 async function loadChatSessions() {
   if (!profile()) return;
   try {
-    const sessions = await window.api.getChatSessions();
+    const sessions = await window.api.getChatSessions(state.profileKey);
     if(chatSessionList) {
         chatSessionList.innerHTML = sessions.map(s => `
           <li style="padding: 8px; border-radius: 4px; cursor: pointer; font-size: 13px; background: ${s.id === currentSessionId ? 'var(--bg-subtle)' : 'transparent'}; position: relative;" 
@@ -478,7 +522,7 @@ window.renameSession = async function(id, currentTitle) {
   const newTitle = prompt("Enter new title for the chat:", currentTitle);
   if (newTitle && newTitle.trim() !== "" && newTitle !== currentTitle) {
     try {
-      await window.api.renameChatSession(id, newTitle.trim());
+      await window.api.renameChatSession(id, newTitle.trim(), state.profileKey);
       loadChatSessions();
       if (currentSessionId === id) {
           // If needed, update current session's UI beyond the sidebar list
@@ -492,7 +536,7 @@ window.renameSession = async function(id, currentTitle) {
 window.deleteSession = async function(id) {
   if (confirm("Are you sure you want to delete this chat session?")) {
     try {
-      await window.api.deleteChatSession(id);
+      await window.api.deleteChatSession(id, state.profileKey);
       if (currentSessionId === id) {
         currentSessionId = null;
         resetChat();
@@ -511,7 +555,7 @@ window.switchSession = async function(id) {
   loadChatSessions(); 
   
   try {
-    const session = await window.api.getChatSession(id);
+    const session = await window.api.getChatSession(id, state.profileKey);
     session.messages.forEach(m => {
       const who = m.role === 'assistant' || m.role === 'twin' ? 'twin' : 'user';
       addBubble(who, m.content);
@@ -533,7 +577,10 @@ function seedChat() {
   if (!profile()) return;
   if (state.chatSeeded || currentSessionId) return;
   state.chatSeeded = true;
-  addBubble('twin', `Hi — I’m grounded in your custom financial profile. Ask me about your runway, savings, exposure, or anything else.`);
+  const greeting = isStartup()
+    ? `Hi — I'm Tathya, grounded in your Startup Financial Twin. Ask me about your cash, burn, runway, revenue, funding, or anything else.`
+    : `Hi — I’m grounded in your custom financial profile. Ask me about your runway, savings, exposure, or anything else.`;
+  addBubble('twin', greeting);
   renderSuggestions();
 }
 
@@ -549,7 +596,8 @@ function resetChat() {
 
 function renderSuggestions() {
   if(currentSessionId) return; // Don't show suggestions in an active session
-  chatSuggestions.innerHTML = SUGGESTIONS.map(s => `<button type="button" class="chip">${s}</button>`).join('');
+  const suggestions = (isStartup() && typeof STARTUP_CHAT_SUGGESTIONS !== 'undefined') ? STARTUP_CHAT_SUGGESTIONS : SUGGESTIONS;
+  chatSuggestions.innerHTML = suggestions.map(s => `<button type="button" class="chip">${s}</button>`).join('');
   chatSuggestions.querySelectorAll('.chip').forEach(chip => {
     chip.addEventListener('click', () => { chatInput.value = chip.textContent; chatForm.requestSubmit(); });
   });
@@ -598,11 +646,22 @@ chatForm.addEventListener('submit', async e => {
   chatLog.scrollTop = chatLog.scrollHeight;
   
   try {
-      const res = await window.api.askTwin(text, currentSessionId);
-      currentSessionId = res.session_id; 
+      const res = await window.api.askTwin(text, currentSessionId, state.profileKey);
+      currentSessionId = res.session_id;
       thinking.remove();
+      // "Show the financial insight visually first, then let Tathya explain it" —
+      // a numeric/trend question gets a chart (built entirely from the Financial
+      // Twin's own metrics) ahead of the text answer; simple questions get none.
+      if (res.visualization && typeof suChatVizHtml === 'function') {
+        const vizHtml = suChatVizHtml(res.visualization);
+        if (vizHtml) {
+          const vizDiv = document.createElement('div');
+          vizDiv.innerHTML = vizHtml;
+          chatLog.appendChild(vizDiv.firstElementChild);
+        }
+      }
       addBubble('twin', res.answer);
-      loadChatSessions(); 
+      loadChatSessions();
   } catch(e) {
       thinking.remove();
       addBubble('twin', "I encountered an error connecting to the backend.");
@@ -622,8 +681,7 @@ if (savedSession) {
     obUserId = session.userId;
     if (session.hasProfile) {
         document.getElementById("appShell").classList.remove("is-onboarding");
-        loadProfileAndRender().then(() => { renderAgents(); });
-        switchView("overview");
+        loadProfileAndRender().then(() => { renderAgents(); switchView("overview"); });
     } else {
         showObView("view-type");
     }
@@ -687,6 +745,9 @@ document.querySelectorAll("#typeOptions .ob-option").forEach(opt => {
 document.getElementById("btnTypeSelect").addEventListener("click", () => {
     if (obPersona === "Individual") {
         showObView("view-method");
+    } else if (obPersona === "Startup") {
+        if (typeof suResetWizard === 'function') suResetWizard();
+        showObView("view-startup-onboard");
     } else {
         showObView("view-confirm");
     }

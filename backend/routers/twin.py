@@ -10,12 +10,14 @@ from typing import List
 from backend.core.auth import get_current_user
 from backend.models.domain import User
 from backend.agents.orchestrator import orchestrator
+from backend.agents.startup_orchestrator import startup_orchestrator
+from backend.routers.startup import log_startup_decision
 
 router = APIRouter(prefix="/twin", tags=["Twin"])
 
 @router.get("/chats", response_model=List[ChatSessionResponse])
-def get_chat_sessions(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    profile = db.query(Profile).filter(Profile.user_id == current_user.id).first()
+def get_chat_sessions(profile_key: str = "individual", current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    profile = db.query(Profile).filter(Profile.user_id == current_user.id, Profile.key == profile_key).first()
     if not profile:
         return []
     
@@ -23,8 +25,8 @@ def get_chat_sessions(current_user: User = Depends(get_current_user), db: Sessio
     return [{"id": s.id, "title": s.title or "New Chat", "created_at": s.created_at.isoformat()} for s in sessions]
 
 @router.get("/chats/{session_id}", response_model=ChatSessionDetail)
-def get_chat_session(session_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    profile = db.query(Profile).filter(Profile.user_id == current_user.id).first()
+def get_chat_session(session_id: str, profile_key: str = "individual", current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    profile = db.query(Profile).filter(Profile.user_id == current_user.id, Profile.key == profile_key).first()
     session = db.query(ChatSession).filter(ChatSession.id == session_id, ChatSession.profile_id == profile.id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -37,8 +39,8 @@ def get_chat_session(session_id: str, current_user: User = Depends(get_current_u
     }
 
 @router.delete("/chats/{session_id}", response_model=GenericResponse)
-def delete_chat_session(session_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    profile = db.query(Profile).filter(Profile.user_id == current_user.id).first()
+def delete_chat_session(session_id: str, profile_key: str = "individual", current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    profile = db.query(Profile).filter(Profile.user_id == current_user.id, Profile.key == profile_key).first()
     session = db.query(ChatSession).filter(ChatSession.id == session_id, ChatSession.profile_id == profile.id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -48,8 +50,8 @@ def delete_chat_session(session_id: str, current_user: User = Depends(get_curren
     return {"success": True, "message": "Session deleted"}
 
 @router.put("/chats/{session_id}", response_model=GenericResponse)
-def rename_chat_session(session_id: str, req: ChatRenameRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    profile = db.query(Profile).filter(Profile.user_id == current_user.id).first()
+def rename_chat_session(session_id: str, req: ChatRenameRequest, profile_key: str = "individual", current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    profile = db.query(Profile).filter(Profile.user_id == current_user.id, Profile.key == profile_key).first()
     session = db.query(ChatSession).filter(ChatSession.id == session_id, ChatSession.profile_id == profile.id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -60,7 +62,7 @@ def rename_chat_session(session_id: str, req: ChatRenameRequest, current_user: U
 
 @router.post("/chat")
 def chat_with_twin(req: ChatRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    profile = db.query(Profile).filter(Profile.user_id == current_user.id).first()
+    profile = db.query(Profile).filter(Profile.user_id == current_user.id, Profile.key == req.profile_key).first()
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
         
@@ -82,9 +84,12 @@ def chat_with_twin(req: ChatRequest, current_user: User = Depends(get_current_us
     db.commit()
     
     history = db.query(ChatMessage).filter(ChatMessage.session_id == session_id).order_by(ChatMessage.created_at).all()
-    chat_history = [{"role": "assistant" if m.role == "twin" else m.role, "content": m.content} for m in history[:-1]] 
-    
-    response = orchestrator.process_query(profile, req.message, chat_history=chat_history)
+    chat_history = [{"role": "assistant" if m.role == "twin" else m.role, "content": m.content} for m in history[:-1]]
+
+    # Chat session storage/CRUD is generic infra shared across personas — only the
+    # grounding/calculation engine behind the answer differs.
+    active_orchestrator = startup_orchestrator if profile.key == "startup" else orchestrator
+    response = active_orchestrator.process_query(profile, req.message, chat_history=chat_history)
     
     twin_msg = ChatMessage(session_id=session_id, role="twin", content=response.answer)
     db.add(twin_msg)
@@ -165,12 +170,19 @@ def simulate_decision(req: SimulateRequest, current_user: User = Depends(get_cur
 
 @router.post("/simulate-scenario", response_model=ScenarioSimulateResponse)
 def simulate_scenario(req: ScenarioSimulateRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    profile = db.query(Profile).filter(Profile.user_id == current_user.id).first()
+    profile = db.query(Profile).filter(Profile.user_id == current_user.id, Profile.key == req.profile_key).first()
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
 
     scenario = (req.scenario or "").strip()
     if not scenario:
         raise HTTPException(status_code=400, detail="Please describe a financial scenario to simulate.")
+
+    if profile.key == "startup":
+        if not profile.startup_profile:
+            raise HTTPException(status_code=404, detail="Startup profile not found. Please complete Startup onboarding first.")
+        response = startup_orchestrator.run_scenario_simulation(profile, scenario)
+        log_startup_decision(db, profile, scenario, response)
+        return response
 
     return orchestrator.run_scenario_simulation(profile, scenario)

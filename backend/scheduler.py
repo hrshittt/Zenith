@@ -9,6 +9,7 @@ from backend.models.domain import Profile, Alert
 logger = logging.getLogger(__name__)
 
 from backend.market_intelligence.service import MarketIntelligenceService
+from backend.services.startup_engine import build_context, compute_metrics, compute_goals, generate_alerts, capture_snapshot_if_needed
 
 def evaluate_profiles():
     db = SessionLocal()
@@ -32,8 +33,18 @@ def evaluate_profiles():
                 # Check goal progress artificially
                 if profile.goal.get("progress", 0) < 50:
                     pass # We could add an alert here
-            elif profile.key == "startup":
-                pass
+            elif profile.key == "startup" and profile.startup_profile:
+                # Capture a daily metric snapshot (idempotent — at most one per day) so
+                # Revenue/Expense Growth, Cash Projection, and the Weekly Report have
+                # real history to compute from, and proactively log risk alerts.
+                ctx = build_context(profile.startup_profile)
+                snapshots = list(profile.startup_snapshots)
+                metrics = compute_metrics(ctx, snapshots)
+                capture_snapshot_if_needed(db, profile.id, ctx, metrics)
+                goals = compute_goals(ctx, metrics)
+                alerts = generate_alerts(ctx, metrics, goals)
+                if alerts:
+                    logger.info(f"Startup profile {profile.id} ({ctx.company_name}) has {len(alerts)} active alert(s): {[a['text'] for a in alerts]}")
             elif profile.key == "enterprise":
                 pass
             

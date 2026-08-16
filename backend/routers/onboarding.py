@@ -7,9 +7,12 @@ from typing import Dict, Any, List
 
 from backend.database import get_db
 from sqlalchemy.orm import Session
-from backend.models.domain import Profile, User
+from backend.models.domain import Profile, User, StartupProfile
 from backend.services.gemini_service import gemini_service
 from backend.core.auth import get_current_user
+from backend.schemas.startup_models import StartupOnboardingRequest, StartupOverviewResponse
+from backend.agents.startup_orchestrator import startup_orchestrator
+from backend.routers.startup import build_overview_payload, log_startup_decision
 
 router = APIRouter(prefix="/onboard", tags=["Onboarding"])
 
@@ -134,3 +137,73 @@ Do not include any other text, explanation, or markdown after the JSON. Do not r
         return {"reply": reply}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/startup", response_model=StartupOverviewResponse)
+def onboard_startup(req: StartupOnboardingRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Builds the Startup Financial Twin from the founder's onboarding wizard —
+    completely separate from Individual's /onboard/confirm (own model, own
+    engine, own dashboard)."""
+    profile = db.query(Profile).filter(Profile.user_id == current_user.id).first()
+    if not profile:
+        profile = Profile(user_id=current_user.id)
+        db.add(profile)
+        db.flush()
+
+    profile.key = "startup"
+    profile.label = "Startup"
+    profile.persona = req.company.name
+    profile.currency = "₹"
+    db.commit()
+    db.refresh(profile)
+
+    sp = profile.startup_profile
+    if not sp:
+        sp = StartupProfile(profile_id=profile.id)
+        db.add(sp)
+
+    sp.founder_name = req.founder.name
+    sp.founder_email = req.founder.email
+    sp.founder_mobile = req.founder.mobile
+    sp.preferred_language = req.founder.preferred_language
+    sp.company_name = req.company.name
+    sp.industry = req.company.industry
+    sp.business_model = req.company.business_model
+    sp.founded_year = req.company.founded_year
+    sp.stage = req.company.stage
+    sp.location = req.company.location
+    sp.website = req.company.website
+    sp.headcount = req.company.headcount
+    sp.is_pre_revenue = req.revenue.is_pre_revenue
+    sp.monthly_revenue = None if req.revenue.is_pre_revenue else req.revenue.monthly_revenue
+    sp.revenue_streams = req.revenue.revenue_streams
+    sp.revenue_growth_pct_input = req.revenue.revenue_growth_pct
+    sp.paying_customers = req.revenue.paying_customers
+    sp.fixed_costs = req.expenses.fixed_costs
+    sp.variable_costs = req.expenses.variable_costs
+    sp.current_cash = req.cash.current_cash
+    sp.monthly_burn_input = req.cash.monthly_burn
+    sp.business_loans_debt = req.debt.business_loans_debt
+    sp.total_funding = req.funding.total_funding
+    sp.last_round = req.funding.last_round
+    sp.currently_fundraising = req.funding.currently_fundraising
+    sp.fundraising_target = req.funding.fundraising_target
+    sp.planned_hires = req.team.planned_hires
+    sp.cost_per_hire = req.team.cost_per_hire
+    sp.goals = [g.model_dump() for g in req.goals]
+    sp.current_decision = req.current_decision
+
+    db.commit()
+    db.refresh(profile)
+    db.refresh(sp)
+
+    # Log the founder's "current financial decision" as the first Recent Decision,
+    # if it parses into a computable scenario (deterministic — same pipeline as Simulate).
+    if req.current_decision and req.current_decision.strip():
+        try:
+            sim_response = startup_orchestrator.run_scenario_simulation(profile, req.current_decision.strip())
+            log_startup_decision(db, profile, req.current_decision.strip(), sim_response)
+        except Exception:
+            pass  # Onboarding should never fail because the decision text didn't parse cleanly.
+
+    return build_overview_payload(db, profile)

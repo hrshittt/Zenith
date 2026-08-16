@@ -26,24 +26,24 @@ async function fetchProfile() {
     return await res.json();
 }
 
-async function askTwin(message, sessionId = null) {
+async function askTwin(message, sessionId = null, profileKey = "individual") {
     const res = await fetch(`${API_BASE}/twin/chat`, {
         method: "POST",
         headers: getHeaders(),
-        body: JSON.stringify({ message, session_id: sessionId })
+        body: JSON.stringify({ message, session_id: sessionId, profile_key: profileKey })
     });
     if (!res.ok) throw new Error("Chat failed");
     return await res.json();
 }
 
-async function getChatSessions() {
-    const res = await fetch(`${API_BASE}/twin/chats`, { headers: getHeaders() });
+async function getChatSessions(profileKey = "individual") {
+    const res = await fetch(`${API_BASE}/twin/chats?profile_key=${profileKey}`, { headers: getHeaders() });
     if (!res.ok) throw new Error("Failed to fetch chats");
     return await res.json();
 }
 
-async function getChatSession(sessionId) {
-    const res = await fetch(`${API_BASE}/twin/chats/${sessionId}`, { headers: getHeaders() });
+async function getChatSession(sessionId, profileKey = "individual") {
+    const res = await fetch(`${API_BASE}/twin/chats/${sessionId}?profile_key=${profileKey}`, { headers: getHeaders() });
     if (!res.ok) throw new Error("Failed to fetch chat session");
     return await res.json();
 }
@@ -58,11 +58,11 @@ async function simulateDecision(decisionId, commitmentPct) {
     return await res.json();
 }
 
-async function simulateScenario(scenario) {
+async function simulateScenario(scenario, profileKey = "individual") {
     const res = await fetch(`${API_BASE}/twin/simulate-scenario`, {
         method: "POST",
         headers: getHeaders(),
-        body: JSON.stringify({ scenario })
+        body: JSON.stringify({ scenario, profile_key: profileKey })
     });
     if (!res.ok) {
         const detail = await res.json().catch(() => null);
@@ -101,6 +101,50 @@ async function confirmProfile(userId, persona, metrics) {
     return await res.json();
 }
 
+async function startupOnboard(payload) {
+    const res = await fetch(`${API_BASE}/onboard/startup`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+        const detail = await res.json().catch(() => null);
+        throw new Error((detail && detail.detail) || "Startup onboarding failed");
+    }
+    return await res.json();
+}
+
+async function fetchStartupOverview() {
+    const res = await fetch(`${API_BASE}/startup/overview`, { headers: getHeaders() });
+    if (!res.ok) throw new Error("Failed to fetch startup overview");
+    return await res.json();
+}
+
+async function fetchStartupHisaab() {
+    const res = await fetch(`${API_BASE}/startup/hisaab`, { headers: getHeaders() });
+    if (!res.ok) throw new Error("Failed to fetch Hisaab");
+    return await res.json();
+}
+
+async function addStartupTransaction(payload) {
+    const res = await fetch(`${API_BASE}/startup/hisaab/transactions`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+        const detail = await res.json().catch(() => null);
+        throw new Error((detail && detail.detail) || "Failed to add transaction");
+    }
+    return await res.json();
+}
+
+async function fetchWeeklyReport() {
+    const res = await fetch(`${API_BASE}/startup/reports/weekly`, { headers: getHeaders() });
+    if (!res.ok) throw new Error("Failed to fetch weekly report");
+    return await res.json();
+}
+
 async function onboardingChat(messages) {
     const res = await fetch(`${API_BASE}/onboard/chat`, {
         method: "POST",
@@ -111,8 +155,8 @@ async function onboardingChat(messages) {
     return await res.json();
 }
 
-async function renameChatSession(sessionId, title) {
-    const res = await fetch(`${API_BASE}/twin/chats/${sessionId}`, {
+async function renameChatSession(sessionId, title, profileKey = "individual") {
+    const res = await fetch(`${API_BASE}/twin/chats/${sessionId}?profile_key=${profileKey}`, {
         method: "PUT",
         headers: getHeaders(),
         body: JSON.stringify({ title })
@@ -121,8 +165,8 @@ async function renameChatSession(sessionId, title) {
     return await res.json();
 }
 
-async function deleteChatSession(sessionId) {
-    const res = await fetch(`${API_BASE}/twin/chats/${sessionId}`, {
+async function deleteChatSession(sessionId, profileKey = "individual") {
+    const res = await fetch(`${API_BASE}/twin/chats/${sessionId}?profile_key=${profileKey}`, {
         method: "DELETE",
         headers: getHeaders()
     });
@@ -142,6 +186,11 @@ window.api = {
     confirmProfile,
     onboardingChat,
     renameChatSession,
-    deleteChatSession
+    deleteChatSession,
+    startupOnboard,
+    fetchStartupOverview,
+    fetchStartupHisaab,
+    addStartupTransaction,
+    fetchWeeklyReport
 };
 
