@@ -207,7 +207,7 @@ class Orchestrator:
             ),
         })
 
-        # 3. Simulate — deterministic financial calculation
+        # 3. Simulate — deterministic financial calculations
         impact, timeline, assumptions, calc_risks = run_calculator(scenario_type, ctx, params)
         stages.append({
             "agent": "Simulate",
