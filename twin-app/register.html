@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Get Started - Zenith</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <script>
+    const sess = JSON.parse(localStorage.getItem('twin_session') || '{}');
+    if (sess.token) window.location.href = '/dashboard.html';
+  </script>
+  <style>
+    body.auth-page {
+      background: linear-gradient(135deg, #020B09 0%, #061F1A 100%);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+    .auth-container {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 12px;
+      padding: 40px;
+      width: 100%;
+      max-width: 640px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    }
+    .auth-brand {
+      font-family: 'Newsreader', serif;
+      font-size: 32px;
+      color: #fff;
+      text-align: center;
+      margin-bottom: 8px;
+    }
+    .auth-subtitle {
+      text-align: center;
+      color: var(--text-muted);
+      margin-bottom: 32px;
+      font-size: 14px;
+    }
+    .step-view { display: none; }
+    .step-view.is-active { display: block; }
+    .auth-error {
+      color: var(--warn);
+      font-size: 13px;
+      margin-bottom: 16px;
+      text-align: center;
+      display: none;
+    }
+  </style>
+</head>
+<body class="theme-dark auth-page">
+
+  <div class="auth-container">
+    <div class="auth-brand">Zenith</div>
+    <div class="auth-subtitle" id="stepSubtitle">Build Your Financial Digital Twin</div>
+    <div id="regError" class="auth-error">An error occurred</div>
+
+    <!-- STEP 1: ACCOUNT TYPE -->
+    <div class="step-view is-active" id="step1">
+      <h3 style="margin-bottom:16px;">Choose Account Type</h3>
+      <div class="ob-options" id="typeOptions">
+        <div class="ob-option is-selected" data-type="individual">
+          <div>
+            <h4>Individual</h4>
+            <p>Personal wealth and expenses</p>
+          </div>
+        </div>
+        <div class="ob-option" data-type="startup">
+          <div>
+            <h4>Startup</h4>
+            <p>Runway and burn management</p>
+          </div>
+        </div>
+        <div class="ob-option" data-type="enterprise">
+          <div>
+            <h4>Enterprise</h4>
+            <p>Treasury and FX exposure</p>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn--primary btn--block" id="btnNext1" style="margin-top:24px;">Next &rarr;</button>
+      <div style="text-align: center; margin-top: 24px; font-size: 13px; color: var(--text-muted);">
+        Already have an account? <a href="/login.html" style="color: var(--primary); text-decoration: none;">Log In</a>
+      </div>
+    </div>
+
+    <!-- STEP 2: ACCOUNT DETAILS -->
+    <div class="step-view" id="step2">
+      <h3 style="margin-bottom:16px;">Account Details</h3>
+      <form id="accountForm">
+        <label class="field">
+          <span>Full Name</span>
+          <input type="text" id="regName" class="ob-input" required>
+        </label>
+        <label class="field">
+          <span>Email Address</span>
+          <input type="email" id="regEmail" class="ob-input" required>
+        </label>
+        <label class="field">
+          <span>Password</span>
+          <input type="password" id="regPassword" class="ob-input" required>
+        </label>
+        <button type="submit" class="btn btn--primary btn--block" id="btnCreateAccount" style="margin-top:16px;">Create Account & Continue</button>
+        <button type="button" class="btn btn--block" onclick="setStep(1)" style="margin-top:8px;">Back</button>
+      </form>
+    </div>
+
+    <!-- STEP 3: INDIVIDUAL PROFILE -->
+    <div class="step-view" id="step3-individual">
+      <h3 style="margin-bottom:16px;">Personal Financial Details</h3>
+      <form id="individualForm">
+        <div class="field-row">
+          <label class="field"><span>Monthly Salary (₹)</span><input type="number" id="indIncome" class="ob-input" required min="0"></label>
+          <label class="field"><span>Total Savings (₹)</span><input type="number" id="indSavings" class="ob-input" required min="0"></label>
+        </div>
+        <div class="field-row">
+          <label class="field"><span>Monthly Expenses (₹)</span><input type="number" id="indExpenses" class="ob-input" required min="0"></label>
+          <label class="field"><span>Outstanding Loans (₹)</span><input type="number" id="indLoans" class="ob-input" required min="0"></label>
+        </div>
+        <button type="submit" class="btn btn--primary btn--block" id="btnIndSubmit" style="margin-top:24px;">Initialize Twin</button>
+      </form>
+    </div>
+
+    <!-- STEP 3: STARTUP PROFILE (Subset of the full wizard for brevity/cleanliness in registration) -->
+    <div class="step-view" id="step3-startup">
+      <h3 style="margin-bottom:16px;">Startup Financial Details</h3>
+      <form id="startupForm">
+        <div class="field-row">
+          <label class="field"><span>Company Name</span><input type="text" id="suCompanyName" class="ob-input" required></label>
+          <label class="field"><span>Industry</span><input type="text" id="suIndustry" class="ob-input"></label>
+        </div>
+        <div class="field-row">
+          <label class="field"><span>Monthly Revenue (₹)</span><input type="number" id="suMonthlyRevenue" class="ob-input" min="0" value="0"></label>
+          <label class="field"><span>Fixed Costs / mo (₹)</span><input type="number" id="suFixedCosts" class="ob-input" min="0" required></label>
+        </div>
+        <div class="field-row">
+          <label class="field"><span>Current Cash in Bank (₹)</span><input type="number" id="suCurrentCash" class="ob-input" min="0" required></label>
+          <label class="field"><span>Monthly Burn (₹)</span><input type="number" id="suMonthlyBurn" class="ob-input" min="0" required></label>
+        </div>
+        <button type="submit" class="btn btn--primary btn--block" id="btnSuSubmit" style="margin-top:24px;">Initialize Twin</button>
+      </form>
+    </div>
+
+    <!-- STEP 3: ENTERPRISE PROFILE -->
+    <div class="step-view" id="step3-enterprise">
+      <h3 style="margin-bottom:16px;">Enterprise Financial Details</h3>
+      <form id="enterpriseForm">
+        <div class="field-row">
+          <label class="field"><span>Organization Name</span><input type="text" id="entOrgName" class="ob-input" required></label>
+          <label class="field"><span>Treasury Balance (₹ Cr)</span><input type="number" id="entTreasury" class="ob-input" min="0" required></label>
+        </div>
+        <div class="field-row">
+          <label class="field"><span>Quarterly Cash Flow (₹ Cr)</span><input type="number" id="entCashFlow" class="ob-input" required></label>
+          <label class="field"><span>FX Exposure (%)</span><input type="number" id="entFx" class="ob-input" min="0" max="100" required></label>
+        </div>
+        <button type="submit" class="btn btn--primary btn--block" id="btnEntSubmit" style="margin-top:24px;">Initialize Twin</button>
+      </form>
+    </div>
+
+  </div>
+
+  <script src="js/auth.js"></script>
+</body>
+</html>

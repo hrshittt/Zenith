@@ -207,3 +207,33 @@ def onboard_startup(req: StartupOnboardingRequest, current_user: User = Depends(
             pass  # Onboarding should never fail because the decision text didn't parse cleanly.
 
     return build_overview_payload(db, profile)
+
+class EnterpriseOnboardingRequest(BaseModel):
+    orgName: str
+    treasury: float
+    cashFlow: float
+    fx: float
+
+@router.post("/enterprise")
+def onboard_enterprise(req: EnterpriseOnboardingRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    profile = db.query(Profile).filter(Profile.user_id == current_user.id).first()
+    if not profile:
+        profile = Profile(user_id=current_user.id)
+        db.add(profile)
+        db.flush()
+
+    profile.key = "enterprise"
+    profile.label = "Enterprise"
+    profile.persona = req.orgName
+    profile.currency = "₹"
+    
+    profile.metrics = [
+        {"id": "treasury", "label": "Treasury balance", "value": req.treasury, "unit": " Cr", "trend": [req.treasury], "isPercent": False},
+        {"id": "cashflow", "label": "Quarterly cash flow", "value": req.cashFlow, "unit": " Cr", "trend": [req.cashFlow], "isPercent": False},
+        {"id": "fxExposure", "label": "FX exposure (EUR)", "value": req.fx, "unit": "%", "trend": [req.fx], "isPercent": False}
+    ]
+    profile.goal = {"title": "Optimize Treasury", "progress": 0, "target": 100}
+    
+    db.commit()
+    db.refresh(profile)
+    return {"status": "ok"}

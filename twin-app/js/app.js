@@ -78,16 +78,7 @@ function switchView(name) {
   }
 }
 
-/* ============ Profile switching ============ */
-document.querySelectorAll('.profileSwitch button').forEach(btn => {
-  btn.addEventListener('click', async () => {
-    document.querySelectorAll('.profileSwitch button').forEach(b => b.classList.remove('is-active'));
-    btn.classList.add('is-active');
-    state.profileKey = btn.dataset.profile;
-    state.simHistory = [];
-    await loadProfileAndRender();
-  });
-});
+// Profile switching logic removed, account type is strictly enforced by the backend
 
 async function loadProfileAndRender() {
     try {
@@ -112,7 +103,8 @@ async function loadProfileAndRender() {
         }
     } catch(e) {
         // Not logged in or no profile
-        showObView("view-type");
+        localStorage.removeItem('twin_session');
+        window.location.href = '/login.html';
     }
 }
 
@@ -676,230 +668,23 @@ chatForm.addEventListener('submit', async e => {
 
 /* ============ Onboarding State ============ */
 let obUserId = "";
-let obPersona = "Individual";
-let obMethod = "upload";
-let obMessages = [];
-
 /* ============ Init ============ */
 const savedSession = localStorage.getItem('twin_session');
 if (savedSession) {
     const session = JSON.parse(savedSession);
-    obUserId = session.userId;
-    if (session.hasProfile) {
-        document.getElementById("appShell").classList.remove("is-onboarding");
-        loadProfileAndRender().then(() => { renderAgents(); switchView("overview"); });
-    } else {
-        showObView("view-type");
-    }
+    loadProfileAndRender().then(() => { 
+        renderAgents(); 
+        switchView("overview"); 
+    });
 } else {
-    showObView("view-auth");
+    window.location.href = '/login.html';
 }
 
 /* ============ Logout ============ */
-document.getElementById("btnLogout").addEventListener("click", () => {
-    localStorage.removeItem('twin_session');
-    location.reload();
-});
-
-/* ============ Onboarding Logic ============ */
-
-function showObView(id) {
-    document.querySelectorAll(".view").forEach(v => v.classList.remove("is-active"));
-    document.getElementById(id).classList.add("is-active");
-}
-
-document.getElementById("btnLogin").addEventListener("click", async () => {
-    const email = document.getElementById("authEmail").value || "user@example.com";
-    const pass = document.getElementById("authPassword").value || "password";
-    const btn = document.getElementById("btnLogin");
-    btn.disabled = true;
-    btn.textContent = "Logging in...";
-    
-    try {
-        const res = await window.api.login(email, pass);
-        obUserId = res.user_id;
-        
-        localStorage.setItem('twin_session', JSON.stringify({
-            token: res.access_token,
-            userId: res.user_id,
-            hasProfile: !!res.profile_key
-        }));
-        
-        if (res.profile_key) {
-            document.getElementById("appShell").classList.remove("is-onboarding");
-            await loadProfileAndRender();
-            renderAgents();
-            switchView("overview");
-        } else {
-            showObView("view-type");
-        }
-    } catch (e) {
-        alert("Login failed: " + e.message);
-    }
-    btn.disabled = false;
-    btn.textContent = "Continue";
-});
-
-document.querySelectorAll("#typeOptions .ob-option").forEach(opt => {
-    opt.addEventListener("click", () => {
-        document.querySelectorAll("#typeOptions .ob-option").forEach(o => o.classList.remove("is-selected"));
-        opt.classList.add("is-selected");
-        obPersona = opt.dataset.type;
-    });
-});
-
-document.getElementById("btnTypeSelect").addEventListener("click", () => {
-    if (obPersona === "Individual") {
-        showObView("view-method");
-    } else if (obPersona === "Startup") {
-        if (typeof suResetWizard === 'function') suResetWizard();
-        showObView("view-startup-onboard");
-    } else {
-        showObView("view-confirm");
-    }
-});
-
-document.querySelectorAll("#methodOptions .ob-option").forEach(opt => {
-    opt.addEventListener("click", () => {
-        document.querySelectorAll("#methodOptions .ob-option").forEach(o => o.classList.remove("is-selected"));
-        opt.classList.add("is-selected");
-        obMethod = opt.dataset.method;
-    });
-});
-
-document.getElementById("btnMethodSelect").addEventListener("click", () => {
-    if (obMethod === "upload") {
-        showObView("view-upload");
-    } else {
-        obMessages = [];
-        document.getElementById("obChatLog").innerHTML = "";
-        addObBubble("twin", "Hello! Let`s build your financial twin. To start, roughly what is your monthly income?");
-        showObView("view-ai-onboard");
-    }
-});
-
-const obFile = document.getElementById("obFile");
-const btnUpload = document.getElementById("btnUpload");
-
-if(obFile) {
-    obFile.addEventListener("change", (e) => {
-        if (e.target.files.length > 0) {
-            document.getElementById("uploadLabel").textContent = e.target.files[0].name;
-            btnUpload.disabled = false;
-        }
+const btnLogout = document.getElementById("btnLogout");
+if (btnLogout) {
+    btnLogout.addEventListener("click", () => {
+        localStorage.removeItem('twin_session');
+        window.location.href = '/';
     });
 }
-
-if(btnUpload) {
-    btnUpload.addEventListener("click", async () => {
-        btnUpload.textContent = "Extracting...";
-        btnUpload.disabled = true;
-        try {
-            const data = await window.api.parseStatement(obFile.files[0]);
-            document.getElementById("cfIncome").value = data.salary || 0;
-            document.getElementById("cfSavings").value = data.savings || 0;
-            let totalExp = 0;
-            if (data.expenses) {
-                Object.values(data.expenses).forEach(v => totalExp += (Number(v)||0));
-            }
-            document.getElementById("cfExpenses").value = totalExp;
-            document.getElementById("cfLoans").value = data.loans || 0;
-            showObView("view-confirm");
-        } catch(err) {
-            alert("Failed to parse statement.");
-        }
-        btnUpload.textContent = "Extract & Build Twin";
-        btnUpload.disabled = false;
-    });
-}
-
-document.getElementById("btnConfirmData").addEventListener("click", async () => {
-    const btn = document.getElementById("btnConfirmData");
-    btn.disabled = true;
-    btn.textContent = "Initializing...";
-    
-    const metrics = [
-        { id: "m_income", label: "Monthly Income", value: Number(document.getElementById("cfIncome").value || 0), unit: "", trend: [0,0] },
-        { id: "m_savings", label: "Total Savings", value: Number(document.getElementById("cfSavings").value || 0), unit: "", trend: [0,0] },
-        { id: "m_expenses", label: "Monthly Expenses", value: Number(document.getElementById("cfExpenses").value || 0), unit: "", trend: [0,0] },
-        { id: "m_loans", label: "Active Loans", value: Number(document.getElementById("cfLoans").value || 0), unit: "", trend: [0,0] },
-        { id: "m_health", label: "Financial Health", value: 85, isPercent: true, trend: [80,85] }
-    ];
-    
-    try {
-        const res = await window.api.confirmProfile(obUserId, obPersona, metrics);
-        
-        const sess = JSON.parse(localStorage.getItem('twin_session') || '{}');
-        sess.hasProfile = true;
-        localStorage.setItem('twin_session', JSON.stringify(sess));
-        
-        document.getElementById("appShell").classList.remove("is-onboarding");
-        await loadProfileAndRender();
-        renderAgents();
-        switchView("overview");
-    } catch (e) {
-        alert("Failed to initialize twin.");
-    }
-    btn.disabled = false;
-    btn.textContent = "Initialize Twin";
-});
-
-function addObBubble(who, text) {
-    const div = document.createElement("div");
-    div.className = "bubble bubble--" + who;
-    if (who === "twin" && typeof marked !== "undefined") {
-        div.innerHTML = marked.parse(text);
-    } else {
-        div.textContent = text;
-    }
-    document.getElementById("obChatLog").appendChild(div);
-    document.getElementById("obChatLog").scrollTop = document.getElementById("obChatLog").scrollHeight;
-    if (who === "twin") obMessages.push({role: "assistant", content: text});
-    else obMessages.push({role: "user", content: text});
-}
-
-const obChatForm = document.getElementById("obChatForm");
-if(obChatForm) {
-    obChatForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const input = document.getElementById("obChatInput");
-        const text = input.value.trim();
-        if (!text) return;
-        
-        input.value = "";
-        addObBubble("user", text);
-        
-        const btn = e.target.querySelector("button");
-        btn.disabled = true;
-        
-        try {
-            const res = await window.api.onboardingChat(obMessages);
-            let reply = res.reply;
-            
-            if (reply.includes("ONBOARDING_COMPLETE")) {
-                const parts = reply.split("ONBOARDING_COMPLETE");
-                if (parts[0].trim()) addObBubble("twin", parts[0]);
-                
-                try {
-                    const match = parts[1].match(/\{[\s\S]*\}/);
-                    if (match) {
-                        const data = JSON.parse(match[0]);
-                        document.getElementById("cfIncome").value = data.salary || 0;
-                        document.getElementById("cfSavings").value = data.savings || 0;
-                        let totalExp = 0;
-                        if (data.expenses) { Object.values(data.expenses).forEach(v => totalExp += (Number(v)||0)); }
-                        document.getElementById("cfExpenses").value = totalExp;
-                        document.getElementById("cfLoans").value = data.loans || 0;
-                    }
-                } catch(e) {}
-                showObView("view-confirm");
-            } else {
-                addObBubble("twin", reply);
-            }
-        } catch(e) {
-            addObBubble("twin", "Sorry, I encountered an error.");
-        }
-        btn.disabled = false;
-    });
-}
-

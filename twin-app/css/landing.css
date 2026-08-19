@@ -1,0 +1,686 @@
+/* ==========================================================================
+   CINEMATIC LANDING PAGE STYLES
+   ========================================================================== */
+
+   body.landing {
+    background-color: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    /* Lenis smooth scrolling requirement */
+    overscroll-behavior: none;
+  }
+  
+  /* --- Custom Cursor --- */
+  .cursor-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 10px var(--accent);
+    transition: width 0.2s, height 0.2s, background 0.2s;
+  }
+  
+  .cursor-outline {
+    width: 40px;
+    height: 40px;
+    border: 1px solid rgba(0, 229, 255, 0.4);
+    border-radius: 50%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 9998;
+    transform: translate(-50%, -50%);
+    transition: width 0.2s, height 0.2s, border-color 0.2s;
+  }
+  
+  /* Hover states for cursor managed by JS */
+  .cursor-hover .cursor-dot {
+    background: transparent;
+  }
+  .cursor-hover .cursor-outline {
+    width: 60px;
+    height: 60px;
+    border-color: var(--accent);
+    background: rgba(0, 229, 255, 0.1);
+  }
+  
+  /* --- Global Canvas --- */
+  #global-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 0; /* Behind everything */
+    pointer-events: none;
+  }
+  
+  /* --- Layout & Sections --- */
+  #smooth-wrapper {
+    overflow: hidden;
+    position: relative;
+    z-index: 1; /* Above canvas */
+  }
+  
+  .scene {
+    position: relative;
+    width: 100%;
+    /* Default min height */
+    min-height: 100vh; 
+  }
+  
+  /* Typography Utilities */
+  .cyan-text {
+    color: var(--accent);
+    text-shadow: 0 0 20px rgba(0, 229, 255, 0.3);
+  }
+  
+  /* --- Navigation --- */
+  .landing-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 48px;
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 1000;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    background: transparent;
+  }
+  
+  .landing-nav.scrolled {
+    padding: 16px 48px;
+    background: rgba(5, 5, 5, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  
+  .landing-brand {
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .landing-brand .brand__mark {
+    color: var(--accent);
+  }
+  
+  .landing-nav-links {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+  }
+  
+  .landing-nav-links a {
+    color: var(--ink-muted);
+    text-decoration: none;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 500;
+    transition: color 0.3s ease;
+  }
+  
+  .landing-nav-links a:hover {
+    color: var(--ink);
+  }
+  
+  .landing-nav-links .btn {
+    text-decoration: none;
+    text-transform: none;
+    letter-spacing: normal;
+  }
+  
+  /* --- Scene 01: Hero --- */
+  .scene-hero {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  
+  .hero-typography {
+    position: relative;
+    width: 100%;
+    max-width: 1200px;
+    text-align: center;
+    height: 120px; /* Space for the absolute positioning of words */
+  }
+  
+  .hero-word {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: var(--font-display);
+    font-size: 80px;
+    font-weight: 600;
+    letter-spacing: -0.04em;
+    color: var(--ink);
+    white-space: nowrap;
+    opacity: 0; /* Hidden by default, GSAP handles this */
+    will-change: transform, opacity, filter;
+  }
+  
+  .hero-scroll-indicator {
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    opacity: 0; /* Revealed by GSAP */
+  }
+  
+  .hero-scroll-indicator span {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink-faint);
+  }
+  
+  .mouse {
+    width: 24px;
+    height: 36px;
+    border: 1px solid var(--ink-muted);
+    border-radius: 12px;
+    position: relative;
+  }
+  
+  .mouse::after {
+    content: '';
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    background: var(--ink);
+    border-radius: 50%;
+    animation: scrollMouse 2s infinite cubic-bezier(0.15, 0.41, 0.69, 0.94);
+  }
+  
+  @keyframes scrollMouse {
+    0% { transform: translate(-50%, 0); opacity: 1; }
+    100% { transform: translate(-50%, 12px); opacity: 0; }
+  }
+  
+  /* --- Scene 02: WOW Moment --- */
+  .scene-wow {
+    /* GSAP will pin this section. It just holds the text over the canvas. */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none; /* Let clicks pass to canvas if needed, though mostly visual */
+  }
+  
+  .wow-text-container {
+    text-align: center;
+    position: relative;
+    z-index: 10;
+  }
+  
+  .wow-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: var(--font-display);
+    font-size: 64px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+    opacity: 0; /* GSAP controls */
+    background: linear-gradient(180deg, #FFFFFF 0%, #A0A0A0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  
+  /* --- Scene 03 & 04: Story --- */
+  .scene-story-wrapper {
+    padding: 160px 48px;
+    background: linear-gradient(180deg, transparent 0%, rgba(5,5,5,1) 20%, rgba(5,5,5,1) 100%);
+    z-index: 2; /* Needs to cover the canvas for these sections */
+  }
+  
+  .story-container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  
+  .story-step {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: center;
+    min-height: 80vh;
+  }
+  
+  .story-step.reverse {
+    direction: rtl;
+  }
+  
+  .story-step.reverse .story-content {
+    direction: ltr;
+  }
+  
+  .story-content {
+    /* Initial state for GSAP */
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  
+  .story-content h2 {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+  
+  .story-content h3 {
+    font-size: 48px;
+    letter-spacing: -0.02em;
+    margin-bottom: 24px;
+    color: var(--ink);
+  }
+  
+  .story-content p {
+    font-size: 20px;
+    color: var(--ink-muted);
+    line-height: 1.6;
+  }
+  
+  /* Visual: Layered Twin */
+  .story-visual {
+    position: relative;
+    width: 100%;
+    height: 500px;
+    perspective: 1000px;
+  }
+  
+  .ui-layer {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform-origin: center;
+    border: 1px solid var(--line-strong);
+    background: rgba(17, 17, 17, 0.4);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 12px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    opacity: 0; /* GSAP controls */
+  }
+  
+  .layer-back {
+    width: 400px;
+    height: 300px;
+    transform: translate(-50%, -50%) translateZ(-100px) rotateY(15deg);
+    border-color: rgba(0, 229, 255, 0.1);
+  }
+  
+  .layer-mid {
+    width: 360px;
+    height: 260px;
+    transform: translate(-50%, -50%) translateZ(0px) rotateY(15deg);
+    border-color: rgba(0, 229, 255, 0.3);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .data-row {
+    height: 12px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 6px;
+    width: 100%;
+  }
+  .data-row:nth-child(2) { width: 70%; background: var(--accent-tint); }
+  
+  .layer-front {
+    width: 300px;
+    height: 200px;
+    transform: translate(-50%, -50%) translateZ(100px) rotateY(15deg);
+    border-color: var(--accent);
+    background: rgba(17,17,17,0.8);
+    padding: 24px;
+  }
+  
+  .chart-mock {
+    width: 100%;
+    height: 100%;
+    border-bottom: 1px solid var(--line);
+    border-left: 1px solid var(--line);
+    position: relative;
+  }
+  .chart-mock::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; width: 80%; height: 60%;
+    background: linear-gradient(to top right, transparent, var(--accent));
+    opacity: 0.2;
+    clip-path: polygon(0 100%, 0 80%, 30% 60%, 70% 20%, 100% 0, 100% 100%);
+  }
+  
+  /* Visual: Simulation Glow */
+  .visual-glow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .simulation-lines {
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    border: 1px dashed var(--line-strong);
+    position: relative;
+    animation: spin 30s linear infinite;
+  }
+  
+  .simulation-lines::before {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 150px; height: 150px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--accent-tint) 0%, transparent 70%);
+    box-shadow: 0 0 40px var(--accent-tint);
+  }
+  
+  /* --- Scene 06: Insights Stream --- */
+  .scene-insights {
+    padding: 160px 0;
+    background: var(--bg);
+    overflow: hidden;
+  }
+  
+  .insights-header {
+    text-align: center;
+    margin-bottom: 80px;
+    padding: 0 48px;
+  }
+  
+  .insights-header h2 {
+    font-size: 48px;
+    letter-spacing: -0.02em;
+    margin-bottom: 16px;
+  }
+  
+  .insight-stream-container {
+    width: 100%;
+    position: relative;
+    /* Allows cards to visually bleed off edge */
+  }
+  
+  .insight-stream {
+    display: flex;
+    gap: 32px;
+    padding-left: 50vw; /* Start from center */
+    align-items: center;
+    /* GSAP will control the horizontal movement */
+  }
+  
+  .stream-card {
+    flex-shrink: 0;
+    width: 480px;
+    height: 320px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    text-decoration: none;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding: 40px;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s;
+    /* GSAP intersection observer will scale this when centered */
+    opacity: 0.5;
+    transform: scale(0.8);
+  }
+  
+  .stream-card.is-center {
+    opacity: 1;
+    transform: scale(1);
+    border-color: var(--line-strong);
+  }
+  
+  .stream-card:hover {
+    border-color: var(--accent);
+  }
+  
+  .stream-card-glow {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: radial-gradient(circle at 50% 100%, rgba(0, 229, 255, 0.1) 0%, transparent 60%);
+    opacity: 0;
+    transition: opacity 0.4s;
+    pointer-events: none;
+  }
+  
+  .stream-card:hover .stream-card-glow {
+    opacity: 1;
+  }
+  
+  .stream-card-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+  
+  .card-meta {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--primary);
+    margin-bottom: 24px;
+  }
+  
+  .card-title {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 500;
+    color: var(--ink);
+    line-height: 1.2;
+    margin-bottom: auto;
+  }
+  
+  .card-author {
+    font-size: 14px;
+    color: var(--ink-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-author::after {
+    content: '→';
+    color: var(--accent);
+    font-size: 16px;
+    transition: transform 0.2s;
+  }
+  .stream-card:hover .card-author::after {
+    transform: translateX(4px);
+  }
+  
+  /* --- Scene 07: Solutions Grid --- */
+  .scene-solutions {
+    padding: 160px 48px;
+    max-width: 1400px;
+    margin: 0 auto;
+    text-align: center;
+    background: var(--bg);
+  }
+  
+  .solutions-title {
+    font-size: 56px;
+    letter-spacing: -0.03em;
+    margin-bottom: 120px;
+    /* GSAP reveal */
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  
+  .type-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 40px;
+  }
+  
+  .type-card {
+    text-align: left;
+    padding: 48px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    /* GSAP reveal */
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  
+  .type-card-bg {
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(circle at center, rgba(0, 163, 104, 0.05) 0%, transparent 50%);
+    opacity: 0;
+    transition: opacity 0.4s;
+    pointer-events: none;
+  }
+  .type-card:hover .type-card-bg {
+    opacity: 1;
+  }
+  
+  .type-card h4 {
+    font-size: 32px;
+    margin-bottom: 24px;
+    position: relative;
+  }
+  
+  .type-card p {
+    font-size: 16px;
+    color: var(--ink-muted);
+    margin-bottom: 40px;
+    line-height: 1.6;
+    position: relative;
+  }
+  
+  .mt-auto { margin-top: auto; position: relative; }
+  
+  /* --- Scene 08: Final CTA --- */
+  .scene-final {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 48px;
+    background: var(--bg);
+    position: relative;
+  }
+  
+  .final-content {
+    max-width: 1000px;
+    /* GSAP scaling */
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  
+  .final-content h2 {
+    font-size: 64px;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+  }
+  
+  .mt-4 { margin-top: 16px; }
+  
+  .btn-massive {
+    margin-top: 64px;
+    padding: 24px 64px;
+    font-size: 20px;
+    border-radius: 12px;
+    background: var(--ink);
+    color: var(--bg);
+    box-shadow: 0 0 40px rgba(255,255,255,0.1);
+  }
+  .btn-massive:hover {
+    box-shadow: 0 0 60px rgba(0, 229, 255, 0.3);
+    background: #fff;
+  }
+  
+  /* --- Footer --- */
+  .landing-footer {
+    border-top: 1px solid var(--line);
+    padding: 80px 48px;
+    text-align: center;
+    background: var(--bg);
+    position: relative;
+    z-index: 2;
+  }
+  
+  .footer-brand {
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 500;
+    color: #fff;
+    margin-bottom: 16px;
+  }
+  
+  /* Buttons General Override */
+  .btn {
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s, box-shadow 0.2s;
+  }
+  .btn:active {
+    transform: scale(0.96);
+  }
+  
+  /* Utilities */
+  @keyframes spin { 100% { transform: rotate(360deg); } }
+  
+  /* --- Responsive --- */
+  @media (max-width: 1024px) {
+    .hero-word { font-size: 56px; }
+    .wow-text { font-size: 40px; }
+    .story-step, .story-step.reverse { grid-template-columns: 1fr; gap: 40px; }
+    .type-grid { grid-template-columns: 1fr; }
+    .stream-card { width: 320px; height: 280px; padding: 24px; }
+    .card-title { font-size: 20px; }
+    .final-content h2 { font-size: 40px; }
+  }
+  
+  @media (max-width: 768px) {
+    /* Hide custom cursor on mobile */
+    .cursor-dot, .cursor-outline { display: none; }
+    .hero-word { font-size: 40px; }
+    .landing-nav { padding: 16px 24px; }
+    .landing-nav-links { display: none; }
+  }

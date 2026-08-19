@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Log In - Zenith</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <script>
+    // Redirect if already logged in
+    const sess = JSON.parse(localStorage.getItem('twin_session') || '{}');
+    if (sess.token) {
+      window.location.href = '/dashboard.html';
+    }
+  </script>
+  <style>
+    body.auth-page {
+      background: linear-gradient(135deg, #020B09 0%, #061F1A 100%);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .auth-container {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 12px;
+      padding: 48px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    }
+    .auth-brand {
+      font-family: 'Newsreader', serif;
+      font-size: 32px;
+      color: #fff;
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .auth-error {
+      color: var(--warn);
+      font-size: 13px;
+      margin-bottom: 16px;
+      text-align: center;
+      display: none;
+    }
+    .auth-links {
+      margin-top: 24px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .auth-links a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body class="theme-dark auth-page">
+
+  <div class="auth-container">
+    <div class="auth-brand">Zenith</div>
+    <div id="loginError" class="auth-error">Invalid credentials</div>
+    <form id="loginForm">
+      <label class="field">
+        <span>Email Address</span>
+        <input type="text" id="authEmail" class="ob-input" placeholder="user@example.com" required>
+      </label>
+      <label class="field">
+        <span>Password</span>
+        <input type="password" id="authPassword" class="ob-input" placeholder="Enter your password" required>
+      </label>
+      <button type="submit" class="btn btn--primary btn--block" id="btnLogin">Log In</button>
+    </form>
+    <div class="auth-links">
+      Don't have an account? <a href="/register.html">Get Started</a>
+    </div>
+  </div>
+
+  <script src="js/auth.js"></script>
+</body>
+</html>

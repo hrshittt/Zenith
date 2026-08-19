@@ -1,48 +1,57 @@
 /* ==========================================================================
    TWIN — application shell styles
    ========================================================================== */
-:root{
-  --bg:            #F7F8F6;
-  --surface:       #FFFFFF;
-  --surface-2:     #F1F4F1;
-  --ink:           #13231E;
-  --ink-muted:     #57685f;
-  --ink-faint:     #8A968F;
-  --primary:       #0E5C4A;
-  --primary-dark:  #093A2E;
-  --primary-tint:  #E4EEEA;
-  --accent:        #C99A2E;
-  --accent-tint:   #F7EDD4;
-  --warn:          #B5502F;
-  --warn-tint:     #F6E4DD;
-  --line:          #E1E6E2;
-  --line-strong:   #CBD4CE;
+:root {
+  /* Core Foundation */
+  --bg:            #050505;
+  --surface:       #111111;
+  --surface-2:     #1A1A1A;
+  --surface-3:     #252525;
+  
+  /* Text */
+  --ink:           #FFFFFF;
+  --ink-muted:     #A0A0A0;
+  --ink-faint:     #606060;
+  
+  /* Primary & Accents (Deloitte Green & Cyan) */
+  --primary:       #00A368;
+  --primary-dark:  #007B4F;
+  --primary-tint:  rgba(0, 163, 104, 0.15);
+  --accent:        #00E5FF;
+  --accent-tint:   rgba(0, 229, 255, 0.15);
+  
+  /* Status */
+  --warn:          #FF4B4B;
+  --warn-tint:     rgba(255, 75, 75, 0.15);
+  --status-good:     #00A368;
+  --status-warning:  #FFB020;
+  --status-serious:  #FF7A00;
+  --status-critical: #FF4B4B;
+  --status-neutral:  #606060;
+  
+  /* Borders & Lines */
+  --line:          rgba(255, 255, 255, 0.08);
+  --line-strong:   rgba(255, 255, 255, 0.15);
 
-  --font-display:  'Newsreader', Georgia, serif;
-  --font-body:     'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono:     'IBM Plex Mono', 'Courier New', monospace;
+  /* Typography */
+  --font-display:  'Outfit', -apple-system, sans-serif;
+  --font-body:     'Inter', -apple-system, sans-serif;
+  --font-mono:     'IBM Plex Mono', monospace;
   --radius: 8px;
 
-  /* Data-viz tokens — validated categorical palette (fixed order, never cycled) */
-  --chart-blue:    #2a78d6;
-  --chart-orange:  #eb6834;
-  --chart-aqua:    #1baf7a;
-  --chart-yellow:  #eda100;
-  --chart-magenta: #e87ba4;
-  --chart-green:   #008300;
-  --chart-violet:  #4a3aa7;
-  --chart-red:     #e34948;
+  /* Data-viz tokens (optimized for dark mode) */
+  --chart-blue:    #3B82F6;
+  --chart-orange:  #F97316;
+  --chart-aqua:    #14B8A6;
+  --chart-yellow:  #EAB308;
+  --chart-magenta: #D946EF;
+  --chart-green:   #22C55E;
+  --chart-violet:  #8B5CF6;
+  --chart-red:     #EF4444;
 
-  /* Status palette — reserved for state, never reused as a series color */
-  --status-good:     #0ca30c;
-  --status-warning:  #fab219;
-  --status-serious:  #ec835a;
-  --status-critical: #d03b3b;
-  --status-neutral:  #8A968F;
-
-  --chart-grid:  #e5e8e3;
-  --chart-axis:  #cbd0cb;
-  --chart-muted: #8A968F;
+  --chart-grid:  rgba(255, 255, 255, 0.05);
+  --chart-axis:  #606060;
+  --chart-muted: #A0A0A0;
 }
 
 *,*::before,*::after{ box-sizing:border-box; }
@@ -70,8 +79,8 @@ a{ color:var(--primary); }
 .sidebar{
   width:232px;
   flex-shrink:0;
-  background:var(--primary-dark);
-  color:#DCE9E3;
+  background:var(--surface-2);
+  color:var(--ink-muted);
   display:flex;
   flex-direction:column;
   padding:24px 16px;
@@ -98,7 +107,7 @@ a{ color:var(--primary); }
   gap:11px;
   background:none;
   border:none;
-  color:#AFC4BB;
+  color:var(--ink-muted);
   font-size:14px;
   font-weight:500;
   padding:11px 12px;
@@ -108,13 +117,13 @@ a{ color:var(--primary); }
   transition:background 0.15s ease, color 0.15s ease;
 }
 .navitem svg{ width:18px; height:18px; flex-shrink:0; }
-.navitem:hover{ background:rgba(255,255,255,0.06); color:#fff; }
-.navitem.is-active{ background:rgba(201,154,46,0.16); color:#fff; }
+.navitem:hover{ background:var(--primary-tint); color:#fff; }
+.navitem.is-active{ background:var(--accent-tint); color:var(--accent); }
 .navitem.is-active svg{ color:var(--accent); }
 
-.sidebar__foot{ padding:12px; border-top:1px solid rgba(255,255,255,0.1); margin-top:12px; }
-.sidebar__foot p{ font-size:11.5px; color:#7E9A8F; margin:0 0 2px; }
-.sidebar__author{ color:#AFC4BB !important; font-weight:500; }
+.sidebar__foot{ padding:12px; border-top:1px solid var(--line); margin-top:12px; }
+.sidebar__foot p{ font-size:11.5px; color:var(--ink-faint); margin:0 0 2px; }
+.sidebar__author{ color:var(--ink-muted) !important; font-weight:500; }
 
 .main{ flex:1; min-width:0; padding:32px 40px 64px; }
 
@@ -148,7 +157,7 @@ a{ color:var(--primary); }
   border-radius:5px;
   cursor:pointer;
 }
-.profileSwitch button.is-active{ background:var(--surface); color:var(--primary); box-shadow:0 1px 2px rgba(0,0,0,0.08); }
+.profileSwitch button.is-active{ background:var(--surface-3); color:var(--primary); box-shadow:0 1px 2px rgba(0,0,0,0.2); }
 
 .demoTag{
   font-family:var(--font-mono);
@@ -286,7 +295,7 @@ select#decisionSelect{
   border-radius:6px;
   font-size:14px;
   color:var(--ink);
-  background:var(--surface);
+  background:var(--surface-2);
 }
 input[type="range"]{
   width:100%;
@@ -523,6 +532,8 @@ ul.sim-history{ list-style:none; margin:0; padding:0; }
   border-radius:6px;
   padding:10px 14px;
   font-size:14px;
+  background:var(--surface-2);
+  color:var(--ink);
 }
 .chat-note{ font-size:11.5px; color:var(--ink-faint); padding:0 22px 16px; }
 
@@ -566,7 +577,7 @@ ul.sim-history{ list-style:none; margin:0; padding:0; }
 .onboarding-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 40px; width: 100%; max-width: 480px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); text-align: center; }
 .onboarding-card h2 { font-size: 24px; margin-bottom: 12px; }
 .onboarding-card p { margin-bottom: 24px; }
-.ob-input { width: 100%; padding: 12px; border: 1px solid var(--line-strong); border-radius: 6px; margin-bottom: 16px; font-size: 14px; }
+.ob-input { width: 100%; padding: 12px; border: 1px solid var(--line-strong); border-radius: 6px; margin-bottom: 16px; font-size: 14px; background:var(--bg); color:var(--ink); }
 .ob-options { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
 .ob-option { display: flex; align-items: center; justify-content: space-between; padding: 16px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; transition: all 0.2s; background: var(--surface); text-align: left; }
 .ob-option:hover { border-color: var(--primary); }
