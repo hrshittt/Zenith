@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 # pyrefly: ignore [missing-import]
 from sqlalchemy.orm import Session
 import uuid
@@ -169,8 +169,12 @@ def simulate_decision(req: SimulateRequest, current_user: User = Depends(get_cur
 
 
 @router.post("/simulate-scenario", response_model=ScenarioSimulateResponse)
-def simulate_scenario(req: ScenarioSimulateRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    profile = db.query(Profile).filter(Profile.user_id == current_user.id, Profile.key == req.profile_key).first()
+def simulate_scenario(req: ScenarioSimulateRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db), x_profile: str = Header(default=None)):
+    query = db.query(Profile).filter(Profile.user_id == current_user.id)
+    if x_profile and x_profile != "individual":
+        query = query.filter(Profile.key == x_profile)
+    profile = query.first()
+    
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
 
