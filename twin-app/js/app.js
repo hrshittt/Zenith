@@ -93,6 +93,12 @@ async function loadProfileAndRender() {
     try {
         currentProfile = await window.api.fetchProfile();
         if (currentProfile) {
+            // /profile/me resolves the real profile.key for the logged-in user
+            // (e.g. "custom_<username>" or "startup") — always trust it over
+            // whatever state.profileKey happened to default to, so a page
+            // refresh/relogin doesn't leave chat/simulate calls sending a
+            // stale "individual" key that matches no row in the DB.
+            state.profileKey = currentProfile.key;
             applyPersonaNav(currentProfile.key === 'startup' ? 'startup' : 'individual');
             if (currentProfile.key === 'startup') {
                 await loadStartupOverviewAndRender();
