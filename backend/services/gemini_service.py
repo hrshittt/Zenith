@@ -73,7 +73,7 @@ class GeminiService:
         chat_history: Optional[List[Dict[str, str]]] = None,
         json_mode: bool = False,
         temperature: float = 0.4,
-        max_output_tokens: int = 2048,
+        max_output_tokens: int = 512,
     ) -> str:
         """Generate text (or a JSON string, if json_mode=True). Raises on
         failure so callers can decide how to fall back — never invents a
@@ -95,6 +95,7 @@ class GeminiService:
         config_kwargs: Dict[str, Any] = {
             "temperature": temperature,
             "max_output_tokens": max_output_tokens,
+            "thinking_config": types.ThinkingConfig(thinking_budget=1),
         }
         if system_instruction:
             config_kwargs["system_instruction"] = system_instruction

@@ -89,7 +89,7 @@ def chat_with_twin(req: ChatRequest, current_user: User = Depends(get_current_us
     # Chat session storage/CRUD is generic infra shared across personas — only the
     # grounding/calculation engine behind the answer differs.
     active_orchestrator = startup_orchestrator if profile.key == "startup" else orchestrator
-    response = active_orchestrator.process_query(profile, req.message, chat_history=chat_history)
+    response = active_orchestrator.process_query(profile, req.message, chat_history=chat_history, db=db)
     
     twin_msg = ChatMessage(session_id=session_id, role="twin", content=response.answer)
     db.add(twin_msg)

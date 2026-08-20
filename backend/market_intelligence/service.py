@@ -13,7 +13,7 @@ except Exception:
     REDIS_AVAILABLE = False
     print("Redis not available, falling back to Database/Memory cache")
 
-from backend.market_intelligence.api_clients import YahooFinanceClient, NewsAPIClient, FREDClient, ExchangeRateClient
+from backend.market_intelligence.api_clients import YahooFinanceClient, NewsAPIClient, FREDClient, ExchangeRateClient, AlphaVantageClient, CoinGeckoClient
 from backend.models.domain import MarketData, NewsItem, EconomicIndicator
 from backend.services.gemini_service import gemini_service
 
@@ -26,6 +26,8 @@ class MarketIntelligenceService:
         self.news_api = NewsAPIClient()
         self.fred = FREDClient()
         self.exchange = ExchangeRateClient()
+        self.alpha_vantage = AlphaVantageClient()
+        self.coingecko = CoinGeckoClient()
 
     def _get_from_cache(self, key):
         if REDIS_AVAILABLE:
@@ -103,6 +105,26 @@ class MarketIntelligenceService:
         # Fallback to Mock Data
         mock_data = {"USDINR=X": 83.5}
         return mock_data.get(pair, 1.0)
+
+    def get_stock_quote_alpha_vantage(self, symbol: str) -> float:
+        cache_key = f"market_data:av:{symbol}"
+        cached = self._get_from_cache(cache_key)
+        if cached:
+            return cached
+        price = self.alpha_vantage.get_quote(symbol)
+        if price is not None:
+            self._set_cache(cache_key, price, expire=1800)
+        return price
+
+    def get_crypto_price(self, coin_id: str = "bitcoin", vs_currency: str = "usd") -> float:
+        cache_key = f"market_data:crypto:{coin_id}:{vs_currency}"
+        cached = self._get_from_cache(cache_key)
+        if cached:
+            return cached
+        price = self.coingecko.get_price(coin_id, vs_currency)
+        if price is not None:
+            self._set_cache(cache_key, price, expire=600)
+        return price
 
     def get_economic_indicator(self, name: str, fred_series_id: str) -> float:
         cache_key = f"market_data:indicator:{name}"
