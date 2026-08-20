@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 # pyrefly: ignore [missing-import]
 from sqlalchemy.orm import Session
 import uuid
@@ -89,7 +89,7 @@ def chat_with_twin(req: ChatRequest, current_user: User = Depends(get_current_us
     # Chat session storage/CRUD is generic infra shared across personas — only the
     # grounding/calculation engine behind the answer differs.
     active_orchestrator = startup_orchestrator if profile.key == "startup" else orchestrator
-    response = active_orchestrator.process_query(profile, req.message, chat_history=chat_history)
+    response = active_orchestrator.process_query(profile, req.message, chat_history=chat_history, db=db)
     
     twin_msg = ChatMessage(session_id=session_id, role="twin", content=response.answer)
     db.add(twin_msg)
@@ -169,8 +169,12 @@ def simulate_decision(req: SimulateRequest, current_user: User = Depends(get_cur
 
 
 @router.post("/simulate-scenario", response_model=ScenarioSimulateResponse)
-def simulate_scenario(req: ScenarioSimulateRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    profile = db.query(Profile).filter(Profile.user_id == current_user.id, Profile.key == req.profile_key).first()
+def simulate_scenario(req: ScenarioSimulateRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db), x_profile: str = Header(default=None)):
+    query = db.query(Profile).filter(Profile.user_id == current_user.id)
+    if x_profile and x_profile != "individual":
+        query = query.filter(Profile.key == x_profile)
+    profile = query.first()
+    
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
 

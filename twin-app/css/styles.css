@@ -13,6 +13,7 @@
   --ink-muted:     #A0A0A0;
   --ink-faint:     #606060;
   
+<<<<<<< HEAD
   /* Legacy/Semantic Aliases */
   --text:          var(--ink);
   --text-primary:  var(--ink);
@@ -25,12 +26,23 @@
   --primary-dark:  #00CCCC;
   --primary-tint:  rgba(0, 255, 255, 0.15);
   --accent:        #00FFFF;
+=======
+  /* Primary & Accents (Deloitte Green & Cyan) */
+  --primary:       #00A368;
+  --primary-dark:  #007B4F;
+  --primary-tint:  rgba(0, 163, 104, 0.15);
+  --accent:        #00E5FF;
+>>>>>>> 509c1f718279cf25d9eb8ac81e99a0cfd8f5aa44
   --accent-tint:   rgba(0, 229, 255, 0.15);
   
   /* Status */
   --warn:          #FF4B4B;
   --warn-tint:     rgba(255, 75, 75, 0.15);
+<<<<<<< HEAD
   --status-good:     #00FFFF;
+=======
+  --status-good:     #00A368;
+>>>>>>> 509c1f718279cf25d9eb8ac81e99a0cfd8f5aa44
   --status-warning:  #FFB020;
   --status-serious:  #FF7A00;
   --status-critical: #FF4B4B;
@@ -52,13 +64,18 @@
   --chart-aqua:    #14B8A6;
   --chart-yellow:  #EAB308;
   --chart-magenta: #D946EF;
+<<<<<<< HEAD
   --chart-green:   #00FFFF;
+=======
+  --chart-green:   #22C55E;
+>>>>>>> 509c1f718279cf25d9eb8ac81e99a0cfd8f5aa44
   --chart-violet:  #8B5CF6;
   --chart-red:     #EF4444;
 
   --chart-grid:  rgba(255, 255, 255, 0.05);
   --chart-axis:  #606060;
   --chart-muted: #A0A0A0;
+<<<<<<< HEAD
 }
 
 [data-theme="light"] {
@@ -92,6 +109,8 @@
 /* Base Transition for Theme Change */
 body {
   transition: background-color 0.4s ease, color 0.4s ease;
+=======
+>>>>>>> 509c1f718279cf25d9eb8ac81e99a0cfd8f5aa44
 }
 
 *,*::before,*::after{ box-sizing:border-box; }

@@ -33,7 +33,13 @@ def evaluate_profiles():
                 # Check goal progress artificially
                 if profile.goal.get("progress", 0) < 50:
                     pass # We could add an alert here
-            elif profile.key == "startup" and profile.startup_profile:
+            elif profile.key == "startup":
+                try:
+                    if not profile.startup_profile:
+                        continue
+                except Exception as e:
+                    logger.error(f"Skipping startup profile {profile.id} — {type(e).__name__}: {e}")
+                    continue
                 # Capture a daily metric snapshot (idempotent — at most one per day) so
                 # Revenue/Expense Growth, Cash Projection, and the Weekly Report have
                 # real history to compute from, and proactively log risk alerts.

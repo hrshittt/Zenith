@@ -50,7 +50,7 @@ class FREDClient:
             return None
         try:
             url = f"https://api.stlouisfed.org/fred/series/observations?series_id={series_id}&api_key={self.api_key}&file_type=json"
-            response = requests.get(url, timeout=5)
+            response = requests.get(url, timeout=15)
             response.raise_for_status()
             data = response.json()
             observations = data.get("observations", [])
@@ -66,20 +66,53 @@ class FREDClient:
 
 class ExchangeRateClient:
     def __init__(self):
-        self.api_key = os.getenv("EXCHANGE_RATE_API_KEY")
-        
+        self.base_url = os.getenv("EXCHANGE_RATE_API_URL", "https://api.frankfurter.dev/v2")
+
     def get_exchange_rate(self, base: str, target: str) -> float:
-        if not self.api_key or self.api_key == "dummy":
-            logger.warning("No valid EXCHANGE_RATE_API_KEY found")
-            return None
         try:
-            url = f"https://v6.exchangerate-api.com/v6/{self.api_key}/pair/{base}/{target}"
+            url = f"{self.base_url}/rate/{base}/{target}"
             response = requests.get(url, timeout=5)
             response.raise_for_status()
             data = response.json()
-            if data.get("result") == "success":
-                return float(data.get("conversion_rate"))
-            return None
+            rate = data.get("rate")
+            return float(rate) if rate is not None else None
         except Exception as e:
             logger.error(f"Error fetching exchange rate for {base}/{target}: {e}")
+            return None
+
+
+class AlphaVantageClient:
+    def __init__(self):
+        self.api_key = os.getenv("ALPHA_VANTAGE_API_KEY")
+
+    def get_quote(self, symbol: str) -> float:
+        if not self.api_key or self.api_key == "dummy":
+            logger.warning("No valid ALPHA_VANTAGE_API_KEY found")
+            return None
+        try:
+            url = f"https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol={symbol}&apikey={self.api_key}"
+            response = requests.get(url, timeout=5)
+            response.raise_for_status()
+            data = response.json()
+            price = data.get("Global Quote", {}).get("05. price")
+            return float(price) if price else None
+        except Exception as e:
+            logger.error(f"Error fetching Alpha Vantage quote for {symbol}: {e}")
+            return None
+
+
+class CoinGeckoClient:
+    def __init__(self):
+        self.api_key = os.getenv("COINGECKO_API_KEY")
+
+    def get_price(self, coin_id: str = "bitcoin", vs_currency: str = "usd") -> float:
+        try:
+            url = f"https://api.coingecko.com/api/v3/simple/price?ids={coin_id}&vs_currencies={vs_currency}"
+            headers = {"x-cg-demo-api-key": self.api_key} if self.api_key else {}
+            response = requests.get(url, headers=headers, timeout=5)
+            response.raise_for_status()
+            data = response.json()
+            return float(data.get(coin_id, {}).get(vs_currency))
+        except Exception as e:
+            logger.error(f"Error fetching CoinGecko price for {coin_id}: {e}")
             return None
