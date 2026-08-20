@@ -16,7 +16,7 @@ class Agent:
         self.description = description
         self.system_prompt_override = system_prompt_override
 
-    def process(self, context: Dict[str, Any], instructions: str, chat_history: List[Dict[str, str]] = None) -> str:
+    def process(self, context: Dict[str, Any], instructions: str, chat_history: List[Dict[str, str]] = None, max_output_tokens: int = 2048) -> str:
         if not groq_service.available():
             return f"[{self.name}] Mock processing for: {instructions[:30]}..."
 
@@ -32,6 +32,7 @@ class Agent:
                 system_instruction=sys_prompt,
                 chat_history=chat_history,
                 temperature=0.4,
+                max_output_tokens=max_output_tokens,
             )
         except Exception as e:
             # Never crash the request — the chatbot degrades to a visible,

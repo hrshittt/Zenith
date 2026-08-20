@@ -24,6 +24,7 @@ from backend.services.startup_scenario import (
     classify_intent, parse_scenario, describe_understanding, run_calculator, validate_result,
     generate_comparison_variants,
 )
+from backend.market_intelligence.service import MarketIntelligenceService
 
 startup_explainer_agent = Agent(
     name="Tathya",
@@ -73,6 +74,42 @@ def _build_visualization(visual_intent: str, ctx: StartupContext, metrics: Dict[
     return None
 
 
+_EXCHANGE_KEYWORDS = ("usd", "dollar", "exchange rate", "forex", "currency", "inr rate")
+_NEWS_KEYWORDS = ("news", "headline", "sentiment", "market news", "industry news")
+_ECONOMIC_KEYWORDS = ("inflation", "interest rate", "repo rate", "economic", "fred")
+
+
+def _classify_market_intent(text: str) -> List[str]:
+    t = text.lower()
+    intents = []
+    if any(k in t for k in _EXCHANGE_KEYWORDS):
+        intents.append("exchange_rate")
+    if any(k in t for k in _NEWS_KEYWORDS):
+        intents.append("news")
+    if any(k in t for k in _ECONOMIC_KEYWORDS):
+        intents.append("economic")
+    return intents
+
+
+def _fetch_market_data(intents: List[str], db: Any, ctx: "StartupContext") -> Dict[str, Any]:
+    if not intents or db is None:
+        return {}
+    mi = MarketIntelligenceService(db)
+    data: Dict[str, Any] = {}
+    try:
+        if "exchange_rate" in intents:
+            data["usd_inr_rate"] = mi.get_exchange_rate("USDINR=X")
+        if "news" in intents:
+            topic = ctx.industry or "startup"
+            data["news"] = mi.get_news_sentiment(topic)
+        if "economic" in intents:
+            data["inflation_in"] = mi.get_economic_indicator("INFLATION_IN", "CPIAUCSL")
+            data["repo_rate_in"] = mi.get_economic_indicator("REPO_RATE_IN", "INTDSRINM193N")
+    except Exception:
+        pass
+    return data
+
+
 def _ctx_and_metrics(profile: Any) -> Tuple[StartupContext, Dict[str, Any], list]:
     ctx = build_context(profile.startup_profile)
     snapshots = list(profile.startup_snapshots)
@@ -85,7 +122,7 @@ def _metrics_to_dict(metrics: Dict[str, Any]) -> Dict[str, Any]:
 
 
 class StartupOrchestrator:
-    def process_query(self, profile: Any, query: str, chat_history: List[Dict[str, str]] = None) -> ChatResponse:
+    def process_query(self, profile: Any, query: str, chat_history: List[Dict[str, str]] = None, db: Any = None) -> ChatResponse:
         trace = []
         ctx, metrics, _snapshots = _ctx_and_metrics(profile)
         goals = compute_goals(ctx, metrics)
@@ -98,18 +135,31 @@ class StartupOrchestrator:
             "goals": goals,
             "alerts": alerts[:3],
         }
+
+        market_intents = _classify_market_intent(query)
+        market_data = _fetch_market_data(market_intents, db, ctx)
+        if market_data:
+            data_ctx["market_data"] = market_data
+            trace.append({"agent": "Market", "action": f"Fetched live data for: {', '.join(market_intents)}", "output": str(market_data)})
+
         data_res = str(data_ctx)
         trace.append({"agent": "Data", "action": "Fetched Startup Financial Twin metrics, goals, and alerts", "output": data_res})
 
-        risk_res = risk_agent.process({"data": data_res}, f"Simulate financial impact for query: {query}")
+        # Risk + Compliance run in parallel — Compliance checks the query
+        # itself for guardrail issues and doesn't strictly need Risk's output
+        # first, so we save one full round-trip.
+        import concurrent.futures
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as ex:
+            f_risk = ex.submit(risk_agent.process, {"data": data_res}, f"Simulate financial impact for query: {query}", None, 800)
+            f_comp = ex.submit(compliance_agent.process, {"data": data_res}, f"Check for unlicensed advice flags in this context: {query}", None, 400)
+            risk_res = f_risk.result()
+            comp_res = f_comp.result()
         trace.append({"agent": "Risk", "action": "Simulated potential outcomes", "output": risk_res})
-
-        comp_res = compliance_agent.process({"simulation": risk_res}, f"Check for unlicensed advice flags in this context: {query}")
         trace.append({"agent": "Compliance", "action": "Checked against guardrails", "output": comp_res})
 
         exp_res = startup_explainer_agent.process(
             {"data": data_res, "simulation": risk_res, "compliance": comp_res},
-            f"Format response for query: {query}", chat_history=chat_history,
+            f"Format response for query: {query}", chat_history=chat_history, max_output_tokens=4096,
         )
         trace.append({"agent": "Tathya", "action": "Formatted final structured output", "output": exp_res})
 
