@@ -1,559 +1,339 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Twin — Agentic Financial Decision Twin</title>
-  <meta name="description" content="A live digital twin of your finances that simulates outcomes before you decide.">
+  <title>MoneyKal | Agentic Financial Digital Twin</title>
+  <meta name="description" content="Model every financial decision before you make it.">
+  
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,500;0,600;1,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
-    rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;1,400&family=Merriweather:wght@400;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Merriweather:wght@400;700;900&display=swap" rel="stylesheet">
+
+  
+  <!-- Core Styles -->
   <link rel="stylesheet" href="css/styles.css">
+  <!-- Cinematic Styles -->
+  <link rel="stylesheet" href="css/landing.css">
+  
+  <script>
+    // Redirect if already logged in
+    const sess = JSON.parse(localStorage.getItem('twin_session') || '{}');
+    if (sess.token) {
+      window.location.href = '/dashboard.html';
+    }
+  </script>
 </head>
+<body class="landing">
 
-<body>
+  <!-- Custom Cursor -->
+  <div class="cursor-dot"></div>
+  <div class="cursor-outline"></div>
 
-  <div class="shell is-onboarding" id="appShell">
+  <!-- Global Canvas Environment (Behind transparent dark sections) -->
+  <canvas id="global-canvas"></canvas>
 
-    <!-- ============ SIDEBAR ============ -->
-    <aside class="sidebar">
-      <div class="sidebar__brand">
-        <span class="brand__mark">◆</span>
-        <span>TWIN</span>
-      </div>
+  <!-- ============ NAVBAR ============ -->
+  <nav class="landing-nav">
+    <div class="landing-brand">
+      <img src="logo.png" alt="MoneyKal Logo" class="brand-logo" />
+    </div>
+    <div class="landing-nav-links">
+      <a href="#product" data-cursor="hover" data-i18n="nav-product">Product</a>
+      <a href="#insights" data-cursor="hover" data-i18n="nav-insights">Insights</a>
+      <a href="#account-types" data-cursor="hover" data-i18n="nav-solutions">Solutions</a>
+      <a href="/login.html" data-cursor="hover" data-i18n="nav-login">Log In</a>
+      <a href="/register.html" class="btn btn--dark" data-cursor="hover" data-i18n="nav-getstarted">Get Started</a>
+    </div>
+    <div class="landing-nav-controls">
+      <button id="theme-toggle" class="nav-icon-btn" aria-label="Toggle Theme">
+        <svg id="theme-icon-moon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+        <svg id="theme-icon-sun" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+      </button>
+      <button id="lang-toggle" class="nav-text-btn"><span style="color: var(--primary);">EN</span> | हिं</button>
+    </div>
+  </nav>
 
-      <nav class="sidebar__nav">
-        <button class="navitem is-active" data-view="overview">
-          <svg viewBox="0 0 20 20" fill="none">
-            <rect x="2.5" y="2.5" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4" />
-            <rect x="11.5" y="2.5" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4" />
-            <rect x="2.5" y="11.5" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4" />
-            <rect x="11.5" y="11.5" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4" />
-          </svg>
-          Overview
-        </button>
-        <button class="navitem" data-view="hisaab" data-persona="startup">
-          <svg viewBox="0 0 20 20" fill="none">
-            <rect x="2.5" y="4" width="15" height="12" rx="1.5" stroke="currentColor" stroke-width="1.4" />
-            <path d="M2.5 8h15M6 12h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
-          </svg>
-          Hisaab
-        </button>
-        <button class="navitem" data-view="ask">
-          <svg viewBox="0 0 20 20" fill="none">
-            <path d="M3 4.5h14v9H8.5L5 16.5v-3H3v-9Z" stroke="currentColor" stroke-width="1.4"
-              stroke-linejoin="round" />
-          </svg>
-          Ask Twin
-        </button>
-        <button class="navitem" data-view="simulate">
-          <svg viewBox="0 0 20 20" fill="none">
-            <path d="M3 6h14M3 10h14M3 14h9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
-            <circle cx="8" cy="6" r="1.6" fill="currentColor" />
-            <circle cx="13" cy="10" r="1.6" fill="currentColor" />
-            <circle cx="6" cy="14" r="1.6" fill="currentColor" />
-          </svg>
-          Simulate
-        </button>
-        <button class="navitem" data-view="alerts" data-persona="startup">
-          <svg viewBox="0 0 20 20" fill="none">
-            <path d="M10 2.5 17.5 16h-15L10 2.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
-            <path d="M10 8v3.5M10 13.5v.1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
-          </svg>
-          Alerts
-        </button>
-        <button class="navitem" data-view="reports" data-persona="startup">
-          <svg viewBox="0 0 20 20" fill="none">
-            <path d="M5 2.5h7l3 3v12H5v-15Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
-            <path d="M7.5 9h5M7.5 12h5M7.5 15h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
-          </svg>
-          Reports
-        </button>
-        <button class="navitem" data-view="agents" data-persona="individual">
-          <svg viewBox="0 0 20 20" fill="none">
-            <circle cx="6.5" cy="6.5" r="2.3" stroke="currentColor" stroke-width="1.4" />
-            <circle cx="14" cy="6.5" r="2.3" stroke="currentColor" stroke-width="1.4" />
-            <circle cx="10" cy="14" r="2.3" stroke="currentColor" stroke-width="1.4" />
-            <path d="M8 8.3 8.6 11.6M12 8.3l-.6 3.3M8.5 6.5h3" stroke="currentColor" stroke-width="1.2" />
-          </svg>
-          Agent team
-        </button>
-        <button class="navitem" data-view="about" data-persona="individual">
-          <svg viewBox="0 0 20 20" fill="none">
-            <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.4" />
-            <path d="M10 9.2v4.3M10 6.8v.1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
-          </svg>
-          About this build
-        </button>
-      </nav>
+  <!-- Smooth Scroll Wrapper -->
+  <div id="smooth-wrapper">
+    <div id="smooth-content">
 
-      <div class="sidebar__foot">
-        <p>Deloitte USI Capstone 2026</p>
-        <p class="sidebar__author">Harshit Maheshwari</p>
-      </div>
-    </aside>
-
-    <!-- ============ MAIN ============ -->
-    <div class="main">
-
-      <!-- Topbar -->
-      <header class="topbar">
-        <div class="topbar__title">
-          <h1 id="topbarTitle">Overview</h1>
-          <p id="topbarSub">Live snapshot of the digital twin</p>
-        </div>
-        <div class="topbar__right">
-          <div class="profileSwitch" role="tablist" aria-label="Profile type">
-            <button data-profile="individual" class="is-active">Individual</button>
-            <button data-profile="startup">Startup</button>
-            <button data-profile="enterprise">Enterprise</button>
-          </div>
-          <div>
-            <span class="demoTag">Demo profile — sample data</span>
-            <button id="btnLogout"
-              style="background: none; border: none; font-size: 11px; cursor: pointer; color: var(--ink-faint); margin-left: 10px; text-decoration: underline;">Log
-              out</button>
-          </div>
-        </div>
-      </header>
-
-      <!-- ================= AUTH VIEW ================= -->
-      <section class="view is-active" id="view-auth">
-        <div class="onboarding-card">
-          <h2>Welcome to TWIN</h2>
-          <p>Sign in to build your Agentic Financial Decision Twin.</p>
-          <input type="text" id="authEmail" class="ob-input" placeholder="Email address" value="user@example.com">
-          <input type="password" id="authPassword" class="ob-input" placeholder="Password" value="password123">
-          <button class="btn btn--primary btn--block" id="btnLogin">Continue</button>
-        </div>
-      </section>
-
-      <!-- ================= TYPE SELECT VIEW ================= -->
-      <section class="view" id="view-type">
-        <div class="onboarding-card">
-          <h2>Select Profile Type</h2>
-          <p>What kind of financial twin are you building?</p>
-          <div class="ob-options" id="typeOptions">
-            <div class="ob-option is-selected" data-type="Individual">
-              <div>
-                <h4>Individual</h4>
-                <p>Personal wealth and expenses</p>
-              </div>
-            </div>
-            <div class="ob-option" data-type="Startup">
-              <div>
-                <h4>Startup</h4>
-                <p>Runway and burn management</p>
-              </div>
-            </div>
-            <div class="ob-option" data-type="Enterprise">
-              <div>
-                <h4>Enterprise</h4>
-                <p>Treasury and FX exposure</p>
-              </div>
-            </div>
-          </div>
-          <button class="btn btn--primary btn--block" id="btnTypeSelect">Next</button>
-        </div>
-      </section>
-
-      <!-- ================= BUILD METHOD VIEW ================= -->
-      <section class="view" id="view-method">
-        <div class="onboarding-card">
-          <h2>Build Your Twin</h2>
-          <p>How would you like to initialize your digital twin?</p>
-          <div class="ob-options" id="methodOptions">
-            <div class="ob-option is-selected" data-method="upload">
-              <div>
-                <h4>Upload Bank Statement</h4>
-                <p>AI extracts data from PDF/CSV automatically</p>
-              </div>
-            </div>
-            <div class="ob-option" data-method="chat">
-              <div>
-                <h4>AI Onboarding Chat</h4>
-                <p>Answer a few questions to build your twin</p>
-              </div>
-            </div>
-          </div>
-          <button class="btn btn--primary btn--block" id="btnMethodSelect">Next</button>
-        </div>
-      </section>
-
-      <!-- ================= UPLOAD VIEW ================= -->
-      <section class="view" id="view-upload">
-        <div class="onboarding-card">
-          <h2>Upload Statement</h2>
-          <p>Upload a recent bank statement (PDF, CSV, Excel).</p>
-          <input type="file" id="obFile" style="display:none;" accept=".pdf,.csv,.xls,.xlsx">
-          <div class="file-upload-box" id="uploadBox" onclick="document.getElementById('obFile').click()">
-            <p id="uploadLabel">Click to select a file</p>
-          </div>
-          <button class="btn btn--primary btn--block" id="btnUpload" disabled>Extract & Build Twin</button>
-        </div>
-      </section>
-
-      <!-- ================= CONFIRM VIEW ================= -->
-      <section class="view" id="view-confirm">
-        <div class="onboarding-card" style="max-width: 540px;">
-          <h2>Confirm Extracted Data</h2>
-          <p>We found the following information. Edit if needed.</p>
-          <div style="text-align: left; margin-bottom: 20px;">
-            <label class="field"><span>Salary / Income</span><input type="number" id="cfIncome"
-                class="ob-input"></label>
-            <label class="field"><span>Savings / Balance</span><input type="number" id="cfSavings"
-                class="ob-input"></label>
-            <label class="field"><span>Total Expenses</span><input type="number" id="cfExpenses"
-                class="ob-input"></label>
-            <label class="field"><span>Loans</span><input type="number" id="cfLoans" class="ob-input"></label>
-          </div>
-          <button class="btn btn--primary btn--block" id="btnConfirmData">Initialize Twin</button>
-        </div>
-      </section>
-
-      <!-- ================= STARTUP ONBOARDING WIZARD ================= -->
-      <section class="view" id="view-startup-onboard">
-        <div class="onboarding-card wizard" style="max-width:640px; text-align:left;">
-          <h2 style="text-align:center;">Build Your Startup Twin</h2>
-          <p style="text-align:center;">A few details so Tathya can ground every number in your real business.</p>
-
-          <div class="wizard__steps">
-            <span class="wizard__step is-active" data-step="1">1. Founder &amp; Company</span>
-            <span class="wizard__step" data-step="2">2. Revenue &amp; Expenses</span>
-            <span class="wizard__step" data-step="3">3. Cash, Debt &amp; Funding</span>
-            <span class="wizard__step" data-step="4">4. Team, Goals &amp; Decision</span>
-          </div>
-
-          <form id="suWizardForm">
-            <!-- Step 1 -->
-            <div class="wizard-step is-active" data-step="1">
-              <h4 class="wizard-step__title">Founder</h4>
-              <div class="field-row">
-                <label class="field"><span>Full name *</span><input type="text" id="suFounderName" class="ob-input" required></label>
-                <label class="field"><span>Email *</span><input type="email" id="suFounderEmail" class="ob-input" required></label>
-              </div>
-              <div class="field-row">
-                <label class="field"><span>Mobile</span><input type="tel" id="suFounderMobile" class="ob-input"></label>
-                <label class="field"><span>Preferred language</span><input type="text" id="suFounderLang" class="ob-input" placeholder="English"></label>
-              </div>
-              <h4 class="wizard-step__title">Company</h4>
-              <div class="field-row">
-                <label class="field"><span>Company name *</span><input type="text" id="suCompanyName" class="ob-input" required></label>
-                <label class="field"><span>Industry</span><input type="text" id="suIndustry" class="ob-input" placeholder="e.g. Fintech, SaaS"></label>
-              </div>
-              <div class="field-row">
-                <label class="field"><span>Business model</span><input type="text" id="suBusinessModel" class="ob-input" placeholder="e.g. B2B SaaS, Marketplace"></label>
-                <label class="field"><span>Founded year</span><input type="number" id="suFoundedYear" class="ob-input" placeholder="2024"></label>
-              </div>
-              <div class="field-row">
-                <label class="field"><span>Stage</span><input type="text" id="suStage" class="ob-input" placeholder="Pre-seed, Seed, Series A…"></label>
-                <label class="field"><span>Location</span><input type="text" id="suLocation" class="ob-input" placeholder="Bengaluru, India"></label>
-              </div>
-              <div class="field-row">
-                <label class="field"><span>Website</span><input type="text" id="suWebsite" class="ob-input" placeholder="https://…"></label>
-                <label class="field"><span>Current headcount</span><input type="number" id="suHeadcount" class="ob-input" min="0"></label>
-              </div>
-            </div>
-
-            <!-- Step 2 -->
-            <div class="wizard-step" data-step="2">
-              <h4 class="wizard-step__title">Revenue</h4>
-              <label class="checkbox-field"><input type="checkbox" id="suPreRevenue"> We're pre-revenue</label>
-              <div class="field-row">
-                <label class="field"><span>Monthly revenue (₹)</span><input type="number" id="suMonthlyRevenue" class="ob-input" min="0"></label>
-                <label class="field"><span>Paying customers</span><input type="number" id="suPayingCustomers" class="ob-input" min="0"></label>
-              </div>
-              <div class="field-row">
-                <label class="field"><span>Revenue streams (comma separated)</span><input type="text" id="suRevenueStreams" class="ob-input" placeholder="Subscriptions, Setup fees"></label>
-                <label class="field"><span>Est. monthly revenue growth (%)</span><input type="number" id="suRevenueGrowth" class="ob-input" step="0.1" placeholder="Leave blank if unsure"></label>
-              </div>
-              <h4 class="wizard-step__title">Expenses</h4>
-              <div class="field-row">
-                <label class="field"><span>Fixed costs / mo (₹)</span><input type="number" id="suFixedCosts" class="ob-input" min="0"></label>
-                <label class="field"><span>Variable costs / mo (₹)</span><input type="number" id="suVariableCosts" class="ob-input" min="0"></label>
-              </div>
-            </div>
-
-            <!-- Step 3 -->
-            <div class="wizard-step" data-step="3">
-              <h4 class="wizard-step__title">Cash</h4>
-              <div class="field-row">
-                <label class="field"><span>Current cash (₹) *</span><input type="number" id="suCurrentCash" class="ob-input" min="0" required></label>
-                <label class="field"><span>Monthly burn (₹, if not itemized above)</span><input type="number" id="suMonthlyBurn" class="ob-input" min="0"></label>
-              </div>
-              <h4 class="wizard-step__title">Debt</h4>
-              <label class="field"><span>Business loans / debt outstanding (₹)</span><input type="number" id="suDebt" class="ob-input" min="0"></label>
-              <h4 class="wizard-step__title">Funding</h4>
-              <div class="field-row">
-                <label class="field"><span>Total funding raised (₹)</span><input type="number" id="suTotalFunding" class="ob-input" min="0"></label>
-                <label class="field"><span>Last round</span><input type="text" id="suLastRound" class="ob-input" placeholder="Seed, Pre-seed…"></label>
-              </div>
-              <label class="checkbox-field"><input type="checkbox" id="suFundraising"> Currently fundraising</label>
-              <label class="field"><span>Fundraising target (₹)</span><input type="number" id="suFundraisingTarget" class="ob-input" min="0"></label>
-            </div>
-
-            <!-- Step 4 -->
-            <div class="wizard-step" data-step="4">
-              <h4 class="wizard-step__title">Team</h4>
-              <div class="field-row">
-                <label class="field"><span>Planned new hires</span><input type="number" id="suPlannedHires" class="ob-input" min="0"></label>
-                <label class="field"><span>Fully-loaded cost per hire / mo (₹)</span><input type="number" id="suCostPerHire" class="ob-input" min="0"></label>
-              </div>
-              <h4 class="wizard-step__title">Goals</h4>
-              <div class="goal-input-row">
-                <label class="checkbox-field"><input type="checkbox" id="suGoalRunway"> Extend runway to</label>
-                <input type="number" id="suGoalRunwayTarget" class="ob-input" placeholder="months" style="max-width:120px;">
-              </div>
-              <div class="goal-input-row">
-                <label class="checkbox-field"><input type="checkbox" id="suGoalRevenue"> Reach monthly revenue of ₹</label>
-                <input type="number" id="suGoalRevenueTarget" class="ob-input" placeholder="amount" style="max-width:160px;">
-              </div>
-              <div class="goal-input-row">
-                <label class="checkbox-field"><input type="checkbox" id="suGoalFundraise"> Raise ₹</label>
-                <input type="number" id="suGoalFundraiseTarget" class="ob-input" placeholder="target amount" style="max-width:160px;">
-              </div>
-              <div class="goal-input-row">
-                <label class="checkbox-field"><input type="checkbox" id="suGoalProfitability"> Reach profitability</label>
-              </div>
-              <div class="goal-input-row">
-                <label class="checkbox-field"><input type="checkbox" id="suGoalCustom"> Custom goal:</label>
-                <input type="text" id="suGoalCustomLabel" class="ob-input" placeholder="e.g. Launch v2 product" style="max-width:220px;">
-              </div>
-              <h4 class="wizard-step__title">Current financial decision</h4>
-              <label class="field"><span>What are you currently weighing?</span>
-                <textarea id="suDecision" class="ob-input" rows="3" placeholder="e.g. Hire 5 people, Raise ₹2 Cr, Increase marketing spend"></textarea>
-              </label>
-            </div>
-          </form>
-
-          <div class="wizard__nav">
-            <button type="button" class="btn" id="suBtnBack" style="visibility:hidden;">Back</button>
-            <button type="button" class="btn btn--primary" id="suBtnNext">Next</button>
-          </div>
-          <p id="suWizardError" style="color:var(--warn); font-size:12.5px; margin-top:10px; display:none;"></p>
-        </div>
-      </section>
-
-      <!-- ================= AI ONBOARDING CHAT VIEW ================= -->
-      <section class="view" id="view-ai-onboard">
-        <div class="chat-panel" style="margin: 0 auto; min-height: 500px; width: 100%; max-width: 600px;">
-          <div style="padding: 16px; border-bottom: 1px solid var(--line);">
-            <h3 style="margin:0;">AI Onboarding</h3>
-            <p style="font-size:12px; margin:0;">Answer a few questions to build your profile.</p>
-          </div>
-          <div class="chat-log" id="obChatLog"></div>
-          <form class="chat-input" id="obChatForm">
-            <input type="text" id="obChatInput" placeholder="Type your answer..." autocomplete="off">
-            <button type="submit" class="btn btn--primary">Send</button>
-          </form>
-        </div>
-      </section>
-
-      <!-- ================= OVERVIEW VIEW ================= -->
-      <section class="view" id="view-overview">
-
-        <div class="persona-strip">
-          <span id="personaLabel"></span>
-          <span class="persona-strip__goal" id="goalStrip"></span>
-        </div>
-
-        <div class="stat-grid" id="statGrid"></div>
-
-        <!-- Startup-only extra panels (hidden/empty for Individual) -->
-        <div id="startupOverviewExtra"></div>
-
-        <div class="grid-2col">
-          <div class="panel">
-            <div class="panel__head">
-              <h3 id="historyPanelTitle">Recent decisions</h3>
-            </div>
-            <ul class="decision-list" id="historyList"></ul>
-          </div>
-
-          <div class="panel">
-            <div class="panel__head">
-              <h3 id="alertPanelTitle">Watch — risk alerts</h3>
-              <span class="dot dot--live"></span>
-            </div>
-            <ul class="alert-list" id="alertList"></ul>
-          </div>
-        </div>
-      </section>
-
-      <!-- ================= HISAAB VIEW (Startup) ================= -->
-      <section class="view" id="view-hisaab">
-        <div class="hisaab-summary" id="hisaabSummary"></div>
-
-        <div class="panel" style="margin-top:16px;">
-          <div class="panel__head">
-            <h3>Add a transaction</h3>
-          </div>
-          <form id="hisaabForm" class="hisaab-form">
-            <select id="hxType" class="ob-input">
-              <option value="in">Money in</option>
-              <option value="out">Money out</option>
-            </select>
-            <input type="text" id="hxCategory" class="ob-input" placeholder="Category (e.g. Payroll, Revenue)" required>
-            <input type="number" id="hxAmount" class="ob-input" placeholder="Amount (₹)" min="0" step="0.01" required>
-            <input type="text" id="hxDescription" class="ob-input" placeholder="Description (optional)">
-            <button type="submit" class="btn btn--primary">Add</button>
-          </form>
-        </div>
-
-        <div class="panel" style="margin-top:16px;">
-          <div class="panel__head">
-            <h3>Transactions</h3>
-          </div>
-          <ul class="hisaab-list" id="hisaabList"></ul>
-        </div>
-      </section>
-
-      <!-- ================= ALERTS VIEW (Startup) ================= -->
-      <section class="view" id="view-alerts">
-        <div class="panel">
-          <div class="panel__head">
-            <h3>Risk alerts</h3>
-            <span class="dot dot--live"></span>
-          </div>
-          <ul class="alert-list" id="alertsFullList"></ul>
-        </div>
-      </section>
-
-      <!-- ================= REPORTS VIEW (Startup) ================= -->
-      <section class="view" id="view-reports">
-        <div class="panel">
-          <div class="panel__head">
-            <h3>Daily financial brief</h3>
-          </div>
-          <div id="dailyBriefFull"></div>
-        </div>
-
-        <div class="panel" style="margin-top:16px;">
-          <div class="panel__head">
-            <h3>Weekly financial health report</h3>
-            <button class="btn" id="btnRefreshWeekly" style="padding:6px 12px; font-size:12.5px; min-height:0;">Refresh</button>
-          </div>
-          <div id="weeklyReport"></div>
-        </div>
-      </section>
-
-      <!-- ================= SIMULATE VIEW ================= -->
-      <section class="view" id="view-simulate">
-        <div class="sim-layout">
-
-          <div class="panel sim-form">
-            <div class="panel__head">
-              <h3>Run a simulation</h3>
-            </div>
-
-            <label class="field">
-              <span>What financial scenario do you want to explore?</span>
-              <textarea id="scenarioInput" class="ob-input sim-scenario-input" rows="4"
-                placeholder="e.g. What happens if I invest ₹20,000 every month for 3 years?"></textarea>
-            </label>
-
-            <div class="sim-chip-row" id="simSuggestions"></div>
-
-            <button class="btn btn--primary btn--block" id="runSimBtn">Run simulation</button>
-
-            <div class="pipeline" id="pipeline"></div>
-          </div>
-
-          <div class="sim-results" id="simResults">
-            <div class="empty-state">
-              <p>Describe a scenario in plain language and run the simulation to see a grounded, personalized breakdown here.</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="panel" style="margin-top:24px;">
-          <div class="panel__head">
-            <h3>Simulation history</h3>
-          </div>
-          <ul class="sim-history" id="simHistory">
-            <li class="empty-row">No simulations run yet this session.</li>
-          </ul>
-        </div>
-      </section>
-
-      <!-- ================= ASK TWIN VIEW ================= -->
-      <section class="view" id="view-ask" style="height: 100%;">
-        <div style="display: flex; height: 100%; gap: 16px;">
+      <!-- ============ SCENE 01: HERO ============ -->
+      <!-- Split composition: Typography on left, dynamic space on right -->
+      <section class="scene scene-hero-new">
+        <div class="hero-split-container">
           
-          <div style="width: 250px; background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; max-height: calc(100vh - 140px); height: 100%;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-              <h3 style="margin: 0; font-size: 14px;">Chat History</h3>
-              <button class="btn" id="btnNewChat" style="padding: 4px 8px; font-size: 12px; min-height: 0;">+ New</button>
+          <!-- Left: Typography -->
+          <div class="hero-text-block">
+            <h2 class="hero-welcome-label" data-i18n="hero-welcome">WELCOME TO</h2>
+            <h1 class="hero-brand-massive">MONEYKAL</h1>
+            <p class="hero-tagline-official" id="typewriter-container" aria-label="See Tomorrow. Decide Today.">
+              <span class="typewriter-text">See Tomorrow. Decide Today.</span><span class="typewriter-cursor"></span>
+            </p>
+            <div class="hero-cta-group">
+              <p class="hero-subtext" data-i18n="hero-subtext">See possibilities before they become financial reality.</p>
+              <a href="/register.html" class="btn btn--primary btn-large" data-cursor="hover" data-i18n="hero-getstarted">Get Started &rarr;</a>
             </div>
-            <ul id="chatSessionList" style="list-style: none; padding: 0; margin: 0; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; min-height: 200px;">
-              <!-- sessions will be injected here -->
-            </ul>
           </div>
           
-          <div class="chat-panel" style="flex: 1; margin: 0; max-height: calc(100vh - 140px);">
-            <div class="chat-log" id="chatLog"></div>
-            <div class="chat-suggestions" id="chatSuggestions"></div>
-            <form class="chat-input" id="chatForm">
-              <input type="text" id="chatInput" placeholder="Ask about your runway, savings, exposure…"
-                autocomplete="off">
-              <button type="submit" class="btn btn--primary">Send</button>
-            </form>
-            <p class="chat-note">Answers are generated from your sample profile data — this is demo mode, not a live
-              account connection.</p>
+          <!-- Right: Visual Composition -->
+          <div class="hero-visual-wrapper">
+            
+            <div class="hero-dashboard-main">
+              <div class="dash-header">
+                <div class="dash-dots"><span></span><span></span><span></span></div>
+                <div class="dash-title" data-i18n="dash-title">Agentic Dashboard</div>
+              </div>
+              <div class="dash-body">
+                <div class="dash-chart"></div>
+                <div class="dash-stats">
+                  <div class="stat-box">
+                    <div class="stat-label" data-i18n="dash-liquidity">Liquidity</div>
+                    <div class="stat-value">$1.4M</div>
+                  </div>
+                  <div class="stat-box">
+                    <div class="stat-label" data-i18n="dash-runway">Runway</div>
+                    <div class="stat-value">18 Mo</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="hero-float-card float-1">
+              <div class="float-text">
+                <div class="fl-title" data-i18n="fl-insight">AI Insight</div>
+                <div class="fl-desc" data-i18n="fl-bullish">Bullish trend detected</div>
+              </div>
+            </div>
+
+            <div class="hero-float-card float-2">
+              <div class="float-text">
+                <div class="fl-title" data-i18n="fl-sim">Simulation</div>
+                <div class="fl-desc" data-i18n="fl-scenario">Scenario A: +12% YoY</div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+        
+        <div class="hero-scroll-indicator">
+          <div class="mouse"></div>
+        </div>
+      </section>
+
+
+
+      <!-- ============ SCENE 03: FINANCIAL TWIN (DARK UI MOCKUP) ============ -->
+      <section id="product" class="scene scene-twin-mockup">
+        
+        <!-- Background Video -->
+        <video src="video.mp4" autoplay loop muted playsinline class="twin-bg-video"></video>
+
+
+        <div class="twin-mockup-container">
+          <div class="twin-text">
+            <h2 class="cyan-text" data-i18n="twin-intelligent">The Intelligent Replica</h2>
+            <h3 data-i18n="twin-build">Build Your Financial Twin</h3>
+            <p data-i18n="twin-desc">Connect securely to your data to create a living, breathing model of your financial state. Experience a futuristic control system for your wealth.</p>
           </div>
           
-        </div>
-      </section>
-
-      <!-- ================= AGENTS VIEW ================= -->
-      <section class="view" id="view-agents">
-        <div class="agent-grid" id="agentGrid"></div>
-      </section>
-
-      <!-- ================= ABOUT VIEW ================= -->
-      <section class="view" id="view-about">
-        <div class="about-panel">
-          <p class="eyebrow">Agentic Financial Decision Twin</p>
-          <h2>What this build demonstrates</h2>
-          <p>Twin runs a live digital model of a user's finances — individual, startup, or enterprise —
-            and simulates a decision's outcomes before anything is recommended. This build is the
-            functional frontend: profile switching, a simulation engine driven by real inputs, an
-            agent pipeline, and a data-grounded chat interface all run client-side against sample
-            profiles, standing in for the live Data Layer until the backend is connected.</p>
-          <div class="about-grid">
-            <div>
-              <h4>Interface</h4>
-              <p>This app — where a question is asked or a decision is logged.</p>
+          <!-- Large layered UI mockup -->
+          <div class="mockup-ui">
+            <div class="mockup-header">
+              <span>MoneyKal Terminal</span>
+              <div class="mockup-dots"><span></span><span></span><span></span></div>
             </div>
-            <div>
-              <h4>Orchestrator</h4>
-              <p>Breaks a request into steps and assigns the right agents (see Agent team).</p>
-            </div>
-            <div>
-              <h4>Digital twin</h4>
-              <p>The simulation engine behind the Simulate tab — tests a decision before it's made.</p>
-            </div>
-            <div>
-              <h4>Data &amp; memory</h4>
-              <p>Sample profiles today; bank, ERP, and accounting connections in the backend phase.</p>
+            <div class="mockup-body">
+              <div class="mockup-card card-income">
+                <label data-i18n="mock-income">Income Stream</label>
+                <div class="mock-value">₹ 14,250,000</div>
+                <div class="mock-chart cyan-chart"></div>
+              </div>
+              <div class="mockup-card card-risk">
+                <label data-i18n="mock-risk">Exposure Risk</label>
+                <div class="mock-value purple-text">12.4%</div>
+                <div class="mock-chart purple-chart"></div>
+              </div>
+              <div class="mockup-card card-main">
+                <label data-i18n="mock-forecast">Trajectory Forecast</label>
+                <div class="mock-main-chart"></div>
+              </div>
             </div>
           </div>
-          <p class="about-credit">Built for the Deloitte USI Capstone Program 2026 · Harshit Maheshwari, Manipal
-            University Jaipur</p>
         </div>
       </section>
+
+
+      <!-- ============ SCENE 05: MAGAZINE BLOG CAROUSEL ============ -->
+      <section id="insights" class="scene scene-magazine-stream">
+        <div class="magazine-header">
+          <h2 data-i18n="mag-header-title">Global Perspectives</h2>
+          <p data-i18n="mag-header-desc">Strategic financial intelligence, curated.</p>
+        </div>
+        
+        <div class="magazine-carousel-container">
+          <div class="magazine-carousel marquee-content">
+            
+            <!-- ORIGINAL SET -->
+            <!-- Card 1 -->
+            <a href="https://www.newtraderu.com/2026/08/01/warren-buffetts-rule-number-one-is-never-lose-money-7-habits-that-keep-him-from-breaking-it/" class="mag-card mag-sage" data-cursor="hover" target="_blank">
+              <div class="mag-meta" data-i18n="cat-investment">Investment</div>
+              <h3 class="mag-title">What Warren Buffett Can Teach You About Simulating Before You Decide</h3>
+              <div class="mag-footer">Warren Buffett <span class="mag-arrow">&rarr;</span></div>
+            </a>
+
+            <!-- Card 2 -->
+            <a href="https://www.economicprinciples.org/how-the-economic-machine-works" class="mag-card mag-blue" data-cursor="hover" target="_blank">
+              <div class="mag-meta" data-i18n="cat-economics">Economics</div>
+              <h3 class="mag-title">Ray Dalio's "Economic Machine" — and Why Your Finances Deserve the Same Thinking</h3>
+              <div class="mag-footer">Ray Dalio <span class="mag-arrow">&rarr;</span></div>
+            </a>
+
+            <!-- Card 3 -->
+            <a href="https://www.nobelprize.org/prizes/economic-sciences/2002/kahneman/facts/" class="mag-card mag-sage" data-cursor="hover" target="_blank">
+              <div class="mag-meta" data-i18n="cat-behavioral">Behavioral Finance</div>
+              <h3 class="mag-title">Daniel Kahneman and the Money Mistakes You Don't Know You're Making</h3>
+              <div class="mag-footer">Daniel Kahneman <span class="mag-arrow">&rarr;</span></div>
+            </a>
+
+            <!-- Card 4 -->
+            <a href="https://fs.blog/charlie-munger-mental-toolbox/" class="mag-card mag-blue" data-cursor="hover" target="_blank">
+              <div class="mag-meta" data-i18n="cat-mental">Mental Models</div>
+              <h3 class="mag-title">Charlie Munger's Mental Models — and Why One Opinion Is Never Enough</h3>
+              <div class="mag-footer">Charlie Munger <span class="mag-arrow">&rarr;</span></div>
+            </a>
+
+            <!-- Card 5 -->
+            <a href="https://diginomica.com/grieves-and-vickers-history-digital-twins" class="mag-card mag-sage" data-cursor="hover" target="_blank">
+              <div class="mag-meta" data-i18n="cat-tech">Technology</div>
+              <h3 class="mag-title">The Original "Digital Twin" — and What It Has to Do With Your Money</h3>
+              <div class="mag-footer">Digital Twin Tech <span class="mag-arrow">&rarr;</span></div>
+            </a>
+
+            <!-- Card 6 -->
+            <a href="https://blogs.microsoft.com/blog/2025/05/19/microsoft-build-2025-the-age-of-ai-agents-and-building-the-open-agentic-web/" class="mag-card mag-blue" data-cursor="hover" target="_blank">
+              <div class="mag-meta" data-i18n="cat-ai">Agentic AI</div>
+              <h3 class="mag-title">Satya Nadella and the Shift From AI Tools to AI Agents</h3>
+              <div class="mag-footer">Satya Nadella <span class="mag-arrow">&rarr;</span></div>
+            </a>
+
+            <!-- DUPLICATE SET FOR INFINITE MARQUEE -->
+            <!-- Card 1 -->
+            <a href="https://www.newtraderu.com/2026/08/01/warren-buffetts-rule-number-one-is-never-lose-money-7-habits-that-keep-him-from-breaking-it/" class="mag-card mag-sage" data-cursor="hover" target="_blank">
+              <div class="mag-meta" data-i18n="cat-investment">Investment</div>
+              <h3 class="mag-title">What Warren Buffett Can Teach You About Simulating Before You Decide</h3>
+              <div class="mag-footer">Warren Buffett <span class="mag-arrow">&rarr;</span></div>
+            </a>
+
+            <!-- Card 2 -->
+            <a href="https://www.economicprinciples.org/how-the-economic-machine-works" class="mag-card mag-blue" data-cursor="hover" target="_blank">
+              <div class="mag-meta" data-i18n="cat-economics">Economics</div>
+              <h3 class="mag-title">Ray Dalio's "Economic Machine" — and Why Your Finances Deserve the Same Thinking</h3>
+              <div class="mag-footer">Ray Dalio <span class="mag-arrow">&rarr;</span></div>
+            </a>
+
+            <!-- Card 3 -->
+            <a href="https://www.nobelprize.org/prizes/economic-sciences/2002/kahneman/facts/" class="mag-card mag-sage" data-cursor="hover" target="_blank">
+              <div class="mag-meta" data-i18n="cat-behavioral">Behavioral Finance</div>
+              <h3 class="mag-title">Daniel Kahneman and the Money Mistakes You Don't Know You're Making</h3>
+              <div class="mag-footer">Daniel Kahneman <span class="mag-arrow">&rarr;</span></div>
+            </a>
+
+            <!-- Card 4 -->
+            <a href="https://fs.blog/charlie-munger-mental-toolbox/" class="mag-card mag-blue" data-cursor="hover" target="_blank">
+              <div class="mag-meta">Mental Models</div>
+              <h3 class="mag-title">Charlie Munger's Mental Models — and Why One Opinion Is Never Enough</h3>
+              <div class="mag-footer">Charlie Munger <span class="mag-arrow">&rarr;</span></div>
+            </a>
+
+            <!-- Card 5 -->
+            <a href="https://diginomica.com/grieves-and-vickers-history-digital-twins" class="mag-card mag-sage" data-cursor="hover" target="_blank">
+              <div class="mag-meta">Technology</div>
+              <h3 class="mag-title">The Original "Digital Twin" — and What It Has to Do With Your Money</h3>
+              <div class="mag-footer">Digital Twin Tech <span class="mag-arrow">&rarr;</span></div>
+            </a>
+
+            <!-- Card 6 -->
+            <a href="https://blogs.microsoft.com/blog/2025/05/19/microsoft-build-2025-the-age-of-ai-agents-and-building-the-open-agentic-web/" class="mag-card mag-blue" data-cursor="hover" target="_blank">
+              <div class="mag-meta">Agentic AI</div>
+              <h3 class="mag-title">Satya Nadella and the Shift From AI Tools to AI Agents</h3>
+              <div class="mag-footer">Satya Nadella <span class="mag-arrow">&rarr;</span></div>
+            </a>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ SCENE 06: SOLUTIONS GRID ============ -->
+      <section id="account-types" class="scene scene-solutions-rich">
+        <canvas id="solutions-canvas"></canvas>
+        <div class="solutions-content-wrapper">
+          <h2 class="solutions-title" data-i18n="sol-title">Built for every scale of complexity.</h2>
+        <div class="type-grid">
+          <div class="type-card" data-cursor="hover">
+            <h4 data-i18n="sol-indiv">Individual</h4>
+            <p data-i18n="sol-indiv-desc">Manage personal wealth, optimize monthly expenses, and simulate large purchases.</p>
+            <a href="/register.html?v=2&type=individual" class="btn btn--glass mt-auto" data-i18n="btn-buildyours">Build Yours</a>
+          </div>
+          <div class="type-card" data-cursor="hover">
+            <h4 data-i18n="sol-startup">Startup</h4>
+            <p data-i18n="sol-startup-desc">Monitor runway, model hiring plans, and simulate the exact dilution of your next round.</p>
+            <a href="/register.html?v=2&type=startup" class="btn btn--glass mt-auto" data-i18n="btn-buildyours">Build Yours</a>
+          </div>
+          <div class="type-card" data-cursor="hover">
+            <h4 data-i18n="sol-ent">Enterprise</h4>
+            <p data-i18n="sol-ent-desc">Treasury management, FX exposure tracking, compliance risk, and multi-entity liquidity.</p>
+            <a href="/register.html?v=2&type=enterprise" class="btn btn--glass mt-auto" data-i18n="btn-buildyours">Build Yours</a>
+          </div>
+        </div>
+        </div>
+      </section>
+
+      <!-- ============ SCENE 04: QUOTE BLOCK ============ -->
+      <section class="scene scene-quote">
+        <video src="quote.mp4" autoplay loop muted playsinline class="quote-bg-video"></video>
+        <div class="quote-overlay"></div>
+        <div class="quote-content">
+          <blockquote class="quote-text" data-i18n="quote-text">“Plans are worthless, but planning is everything.”</blockquote>
+          <p class="quote-author">— Dwight D. Eisenhower</p>
+        </div>
+      </section>
+
+      <!-- ============ SCENE 07: VIBRANT FINAL CTA ============ -->
+      <section class="scene scene-final-vibrant">
+        <div class="final-content">
+          <h2 data-i18n="cta-creating">Your financial future is already creating possibilities.</h2>
+          <h2 class="mt-4"><span data-i18n="cta-question">The question is whether </span><span class="typewriter-inline-grid" id="typewriter-cta-container" aria-label="you can see them."><span class="typewriter-hidden-spacer">you can see them.</span><span class="typewriter-active-area"><span class="typewriter-text-cta">you can see them.</span><span class="typewriter-cursor"></span></span></span></h2>
+          <a href="/register.html" class="btn btn-massive" data-cursor="hover" data-i18n="cta-btn">GET STARTED &rarr;</a>
+        </div>
+      </section>
+
+      <!-- Footer -->
+      <footer class="landing-footer">
+        <div class="footer-brand">
+          <img src="logo.png" alt="MoneyKal Logo" class="brand-logo-footer" />
+        </div>
+        <p>&copy; 2026 MoneyKal Financial Technologies. All rights reserved.</p>
+      </footer>
 
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <script src="js/data.js?v=6"></script>
-  <script src="js/api.js?v=6"></script>
-  <script src="js/startup.js?v=6"></script>
-  <script src="js/app.js?v=6"></script>
-</body>
+  <!-- External Libraries -->
+  <!-- Lenis for smooth scrolling -->
+  <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.29/bundled/lenis.min.js"></script>
+  <!-- GSAP Core & ScrollTrigger -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  
+  <!-- Three.js for 3D Backgrounds -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
+  <!-- Application Logic -->
+  <script src="js/i18n.js"></script>
+  <script src="js/solutions-3d.js"></script>
+  <script src="js/landing.js?v=2"></script>
+</body>
 </html>

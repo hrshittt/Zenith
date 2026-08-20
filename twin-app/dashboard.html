@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MoneyKal Dashboard</title>
+  <meta name="description" content="A live digital twin of your finances that simulates outcomes before you decide.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <script>
+    const sess = JSON.parse(localStorage.getItem('twin_session') || '{}');
+    if (!sess.token) {
+      window.location.href = '/login.html';
+    }
+  </script>
+</head>
+
+<body>
+
+  <div class="shell" id="appShell">
+
+    <!-- ============ SIDEBAR ============ -->
+    <aside class="sidebar">
+      <div class="sidebar__brand">
+        <img src="logo.png" alt="MoneyKal Logo" class="brand-logo-sidebar" />
+      </div>
+
+      <nav class="sidebar__nav">
+        <button class="navitem is-active" data-view="overview">
+          <svg viewBox="0 0 20 20" fill="none">
+            <rect x="2.5" y="2.5" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4" />
+            <rect x="11.5" y="2.5" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4" />
+            <rect x="2.5" y="11.5" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4" />
+            <rect x="11.5" y="11.5" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4" />
+          </svg>
+          Overview
+        </button>
+        <button class="navitem" data-view="hisaab" data-persona="startup">
+          <svg viewBox="0 0 20 20" fill="none">
+            <rect x="2.5" y="4" width="15" height="12" rx="1.5" stroke="currentColor" stroke-width="1.4" />
+            <path d="M2.5 8h15M6 12h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+          </svg>
+          Hisaab
+        </button>
+        <button class="navitem" data-view="ask">
+          <svg viewBox="0 0 20 20" fill="none">
+            <path d="M3 4.5h14v9H8.5L5 16.5v-3H3v-9Z" stroke="currentColor" stroke-width="1.4"
+              stroke-linejoin="round" />
+          </svg>
+          Ask Twin
+        </button>
+        <button class="navitem" data-view="simulate">
+          <svg viewBox="0 0 20 20" fill="none">
+            <path d="M3 6h14M3 10h14M3 14h9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+            <circle cx="8" cy="6" r="1.6" fill="currentColor" />
+            <circle cx="13" cy="10" r="1.6" fill="currentColor" />
+            <circle cx="6" cy="14" r="1.6" fill="currentColor" />
+          </svg>
+          Simulate
+        </button>
+        <button class="navitem" data-view="alerts" data-persona="startup">
+          <svg viewBox="0 0 20 20" fill="none">
+            <path d="M10 2.5 17.5 16h-15L10 2.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
+            <path d="M10 8v3.5M10 13.5v.1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+          </svg>
+          Alerts
+        </button>
+        <button class="navitem" data-view="reports" data-persona="startup">
+          <svg viewBox="0 0 20 20" fill="none">
+            <path d="M5 2.5h7l3 3v12H5v-15Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
+            <path d="M7.5 9h5M7.5 12h5M7.5 15h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+          </svg>
+          Reports
+        </button>
+        <button class="navitem" data-view="agents" data-persona="individual">
+          <svg viewBox="0 0 20 20" fill="none">
+            <circle cx="6.5" cy="6.5" r="2.3" stroke="currentColor" stroke-width="1.4" />
+            <circle cx="14" cy="6.5" r="2.3" stroke="currentColor" stroke-width="1.4" />
+            <circle cx="10" cy="14" r="2.3" stroke="currentColor" stroke-width="1.4" />
+            <path d="M8 8.3 8.6 11.6M12 8.3l-.6 3.3M8.5 6.5h3" stroke="currentColor" stroke-width="1.2" />
+          </svg>
+          Agent team
+        </button>
+        <button class="navitem" data-view="about" data-persona="individual">
+          <svg viewBox="0 0 20 20" fill="none">
+            <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.4" />
+            <path d="M10 9.2v4.3M10 6.8v.1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+          </svg>
+          About this build
+        </button>
+      </nav>
+
+      <div class="sidebar__foot">
+        <p>Zenith Financial Technologies</p>
+      </div>
+    </aside>
+
+    <!-- ============ MAIN ============ -->
+    <div class="main">
+
+      <!-- Topbar -->
+      <header class="topbar">
+        <div class="topbar__title">
+          <h1 id="topbarTitle">Overview</h1>
+          <p id="topbarSub">Live snapshot of the digital twin</p>
+        </div>
+        <div class="topbar__right">
+          <div role="presentation">
+            <button id="btnLogout"
+              style="background: none; border: none; font-size: 11px; cursor: pointer; color: var(--ink-faint); margin-left: 10px; text-decoration: underline;">Log
+              out</button>
+          </div>
+        </div>
+      </header>
+
+      <!-- ================= OVERVIEW VIEW ================= -->
+      <section class="view is-active" id="view-overview">
+
+        <div class="persona-strip">
+          <span id="personaLabel"></span>
+          <span class="persona-strip__goal" id="goalStrip"></span>
+        </div>
+
+        <div class="stat-grid" id="statGrid"></div>
+
+        <!-- Startup-only extra panels (hidden/empty for Individual) -->
+        <div id="startupOverviewExtra"></div>
+
+        <div class="grid-2col">
+          <div class="panel">
+            <div class="panel__head">
+              <h3 id="historyPanelTitle">Recent decisions</h3>
+            </div>
+            <ul class="decision-list" id="historyList"></ul>
+          </div>
+
+          <div class="panel">
+            <div class="panel__head">
+              <h3 id="alertPanelTitle">Watch — risk alerts</h3>
+              <span class="dot dot--live"></span>
+            </div>
+            <ul class="alert-list" id="alertList"></ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= HISAAB VIEW (Startup) ================= -->
+      <section class="view" id="view-hisaab">
+        <div class="hisaab-summary" id="hisaabSummary"></div>
+
+        <div class="panel" style="margin-top:16px;">
+          <div class="panel__head">
+            <h3>Add a transaction</h3>
+          </div>
+          <form id="hisaabForm" class="hisaab-form">
+            <select id="hxType" class="ob-input">
+              <option value="in">Money in</option>
+              <option value="out">Money out</option>
+            </select>
+            <input type="text" id="hxCategory" class="ob-input" placeholder="Category (e.g. Payroll, Revenue)" required>
+            <input type="number" id="hxAmount" class="ob-input" placeholder="Amount (₹)" min="0" step="0.01" required>
+            <input type="text" id="hxDescription" class="ob-input" placeholder="Description (optional)">
+            <button type="submit" class="btn btn--primary">Add</button>
+          </form>
+        </div>
+
+        <div class="panel" style="margin-top:16px;">
+          <div class="panel__head">
+            <h3>Transactions</h3>
+          </div>
+          <ul class="hisaab-list" id="hisaabList"></ul>
+        </div>
+      </section>
+
+      <!-- ================= ALERTS VIEW (Startup) ================= -->
+      <section class="view" id="view-alerts">
+        <div class="panel">
+          <div class="panel__head">
+            <h3>Risk alerts</h3>
+            <span class="dot dot--live"></span>
+          </div>
+          <ul class="alert-list" id="alertsFullList"></ul>
+        </div>
+      </section>
+
+      <!-- ================= REPORTS VIEW (Startup) ================= -->
+      <section class="view" id="view-reports">
+        <div class="panel">
+          <div class="panel__head">
+            <h3>Daily financial brief</h3>
+          </div>
+          <div id="dailyBriefFull"></div>
+        </div>
+
+        <div class="panel" style="margin-top:16px;">
+          <div class="panel__head">
+            <h3>Weekly financial health report</h3>
+            <button class="btn" id="btnRefreshWeekly" style="padding:6px 12px; font-size:12.5px; min-height:0;">Refresh</button>
+          </div>
+          <div id="weeklyReport"></div>
+        </div>
+      </section>
+
+      <!-- ================= SIMULATE VIEW ================= -->
+      <section class="view" id="view-simulate">
+        <div class="sim-layout">
+
+          <div class="panel sim-form">
+            <div class="panel__head">
+              <h3>Run a simulation</h3>
+            </div>
+
+            <label class="field">
+              <span>What financial scenario do you want to explore?</span>
+              <textarea id="scenarioInput" class="ob-input sim-scenario-input" rows="4"
+                placeholder="e.g. What happens if I invest ₹20,000 every month for 3 years?"></textarea>
+            </label>
+
+            <div class="sim-chip-row" id="simSuggestions"></div>
+
+            <button class="btn btn--primary btn--block" id="runSimBtn">Run simulation</button>
+
+            <div class="pipeline" id="pipeline"></div>
+          </div>
+
+          <div class="sim-results" id="simResults">
+            <div class="empty-state">
+              <p>Describe a scenario in plain language and run the simulation to see a grounded, personalized breakdown here.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:24px;">
+          <div class="panel__head">
+            <h3>Simulation history</h3>
+          </div>
+          <ul class="sim-history" id="simHistory">
+            <li class="empty-row">No simulations run yet this session.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- ================= ASK TWIN VIEW ================= -->
+      <section class="view" id="view-ask" style="height: 100%;">
+        <div style="display: flex; height: 100%; gap: 16px;">
+          
+          <div style="width: 250px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; max-height: calc(100vh - 140px); height: 100%;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <h3 style="margin: 0; font-size: 14px;">Chat History</h3>
+              <button class="btn" id="btnNewChat" style="padding: 4px 8px; font-size: 12px; min-height: 0;">+ New</button>
+            </div>
+            <ul id="chatSessionList" style="list-style: none; padding: 0; margin: 0; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; min-height: 200px;">
+              <!-- sessions will be injected here -->
+            </ul>
+          </div>
+          
+          <div class="chat-panel" style="flex: 1; margin: 0; max-height: calc(100vh - 140px);">
+            <div class="chat-log" id="chatLog"></div>
+            <div class="chat-suggestions" id="chatSuggestions"></div>
+            <form class="chat-input" id="chatForm">
+              <input type="text" id="chatInput" placeholder="Ask about your runway, savings, exposure…"
+                autocomplete="off">
+              <button type="submit" class="btn btn--primary">Send</button>
+            </form>
+            <p class="chat-note">Answers are generated from your sample profile data — this is demo mode, not a live
+              account connection.</p>
+          </div>
+          
+        </div>
+      </section>
+
+      <!-- ================= AGENTS VIEW ================= -->
+      <section class="view" id="view-agents">
+        <div class="agent-grid" id="agentGrid"></div>
+      </section>
+
+      <!-- ================= ABOUT VIEW ================= -->
+      <section class="view" id="view-about">
+        <div class="about-panel">
+          <p class="eyebrow">Agentic Financial Decision Twin</p>
+          <h2>What this build demonstrates</h2>
+          <p>Twin runs a live digital model of a user's finances — individual, startup, or enterprise —
+            and simulates a decision's outcomes before anything is recommended. This build is the
+            functional frontend: profile switching, a simulation engine driven by real inputs, an
+            agent pipeline, and a data-grounded chat interface all run client-side against sample
+            profiles, standing in for the live Data Layer until the backend is connected.</p>
+          <div class="about-grid">
+            <div>
+              <h4>Interface</h4>
+              <p>This app — where a question is asked or a decision is logged.</p>
+            </div>
+            <div>
+              <h4>Orchestrator</h4>
+              <p>Breaks a request into steps and assigns the right agents (see Agent team).</p>
+            </div>
+            <div>
+              <h4>Digital twin</h4>
+              <p>The simulation engine behind the Simulate tab — tests a decision before it's made.</p>
+            </div>
+            <div>
+              <h4>Data &amp; memory</h4>
+              <p>Sample profiles today; bank, ERP, and accounting connections in the backend phase.</p>
+            </div>
+          </div>
+          <div class="about-foot">
+          <p class="about-credit">Built with MoneyKal Financial Technologies</p>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="js/data.js?v=6"></script>
+  <script src="js/api.js?v=6"></script>
+  <script src="js/startup.js?v=6"></script>
+  <script src="js/app.js?v=6"></script>
+</body>
+
+</html>

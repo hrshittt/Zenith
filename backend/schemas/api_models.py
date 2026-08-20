@@ -52,7 +52,6 @@ class ProfileResponse(BaseModel):
 class ChatRequest(BaseModel):
     message: str
     session_id: Optional[str] = None
-    profile_key: str = "individual"
 
 class ChatMessageModel(BaseModel):
     role: str
@@ -103,7 +102,6 @@ class SimulateResponse(BaseModel):
 
 class ScenarioSimulateRequest(BaseModel):
     scenario: str
-    profile_key: str = "individual"
 
 class StageTrace(BaseModel):
     agent: str

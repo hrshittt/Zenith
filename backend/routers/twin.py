@@ -16,8 +16,8 @@ from backend.routers.startup import log_startup_decision
 router = APIRouter(prefix="/twin", tags=["Twin"])
 
 @router.get("/chats", response_model=List[ChatSessionResponse])
-def get_chat_sessions(profile_key: str = "individual", current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    profile = db.query(Profile).filter(Profile.user_id == current_user.id, Profile.key == profile_key).first()
+def get_chat_sessions(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    profile = db.query(Profile).filter(Profile.user_id == current_user.id).first()
     if not profile:
         return []
     
@@ -25,8 +25,8 @@ def get_chat_sessions(profile_key: str = "individual", current_user: User = Depe
     return [{"id": s.id, "title": s.title or "New Chat", "created_at": s.created_at.isoformat()} for s in sessions]
 
 @router.get("/chats/{session_id}", response_model=ChatSessionDetail)
-def get_chat_session(session_id: str, profile_key: str = "individual", current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    profile = db.query(Profile).filter(Profile.user_id == current_user.id, Profile.key == profile_key).first()
+def get_chat_session(session_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    profile = db.query(Profile).filter(Profile.user_id == current_user.id).first()
     session = db.query(ChatSession).filter(ChatSession.id == session_id, ChatSession.profile_id == profile.id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -39,8 +39,8 @@ def get_chat_session(session_id: str, profile_key: str = "individual", current_u
     }
 
 @router.delete("/chats/{session_id}", response_model=GenericResponse)
-def delete_chat_session(session_id: str, profile_key: str = "individual", current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    profile = db.query(Profile).filter(Profile.user_id == current_user.id, Profile.key == profile_key).first()
+def delete_chat_session(session_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    profile = db.query(Profile).filter(Profile.user_id == current_user.id).first()
     session = db.query(ChatSession).filter(ChatSession.id == session_id, ChatSession.profile_id == profile.id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -50,8 +50,8 @@ def delete_chat_session(session_id: str, profile_key: str = "individual", curren
     return {"success": True, "message": "Session deleted"}
 
 @router.put("/chats/{session_id}", response_model=GenericResponse)
-def rename_chat_session(session_id: str, req: ChatRenameRequest, profile_key: str = "individual", current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    profile = db.query(Profile).filter(Profile.user_id == current_user.id, Profile.key == profile_key).first()
+def rename_chat_session(session_id: str, req: ChatRenameRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    profile = db.query(Profile).filter(Profile.user_id == current_user.id).first()
     session = db.query(ChatSession).filter(ChatSession.id == session_id, ChatSession.profile_id == profile.id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -62,7 +62,7 @@ def rename_chat_session(session_id: str, req: ChatRenameRequest, profile_key: st
 
 @router.post("/chat")
 def chat_with_twin(req: ChatRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    profile = db.query(Profile).filter(Profile.user_id == current_user.id, Profile.key == req.profile_key).first()
+    profile = db.query(Profile).filter(Profile.user_id == current_user.id).first()
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
         
