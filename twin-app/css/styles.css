@@ -13,17 +13,36 @@
   --ink-muted:     #A0A0A0;
   --ink-faint:     #606060;
   
+<<<<<<< HEAD
+  /* Legacy/Semantic Aliases */
+  --text:          var(--ink);
+  --text-primary:  var(--ink);
+  --text-secondary:var(--ink-muted);
+  --text-muted:    var(--ink-muted);
+  
+  /* Primary & Accents (Cyan) */
+  --primary:       #00FFFF;
+  --primary-text:  #050505;
+  --primary-dark:  #00CCCC;
+  --primary-tint:  rgba(0, 255, 255, 0.15);
+  --accent:        #00FFFF;
+=======
   /* Primary & Accents (Deloitte Green & Cyan) */
   --primary:       #00A368;
   --primary-dark:  #007B4F;
   --primary-tint:  rgba(0, 163, 104, 0.15);
   --accent:        #00E5FF;
+>>>>>>> 509c1f718279cf25d9eb8ac81e99a0cfd8f5aa44
   --accent-tint:   rgba(0, 229, 255, 0.15);
   
   /* Status */
   --warn:          #FF4B4B;
   --warn-tint:     rgba(255, 75, 75, 0.15);
+<<<<<<< HEAD
+  --status-good:     #00FFFF;
+=======
   --status-good:     #00A368;
+>>>>>>> 509c1f718279cf25d9eb8ac81e99a0cfd8f5aa44
   --status-warning:  #FFB020;
   --status-serious:  #FF7A00;
   --status-critical: #FF4B4B;
@@ -45,13 +64,53 @@
   --chart-aqua:    #14B8A6;
   --chart-yellow:  #EAB308;
   --chart-magenta: #D946EF;
+<<<<<<< HEAD
+  --chart-green:   #00FFFF;
+=======
   --chart-green:   #22C55E;
+>>>>>>> 509c1f718279cf25d9eb8ac81e99a0cfd8f5aa44
   --chart-violet:  #8B5CF6;
   --chart-red:     #EF4444;
 
   --chart-grid:  rgba(255, 255, 255, 0.05);
   --chart-axis:  #606060;
   --chart-muted: #A0A0A0;
+<<<<<<< HEAD
+}
+
+[data-theme="light"] {
+  /* Core Foundation */
+  --bg:            #F9FAFB;
+  --surface:       #FFFFFF;
+  --surface-2:     #F3F4F6;
+  --surface-3:     #E5E7EB;
+  
+  /* Text */
+  --ink:           #1F2937;
+  --ink-muted:     #4B5563;
+  --ink-faint:     #9CA3AF;
+  
+  /* Borders & Lines */
+  --line:          rgba(0, 0, 0, 0.08);
+  --line-strong:   rgba(0, 0, 0, 0.15);
+
+  --chart-grid:    rgba(0, 0, 0, 0.05);
+  --chart-axis:    #9CA3AF;
+  --chart-muted:   #6B7280;
+  
+  /* Primary & Accents for Light Mode */
+  --primary:       #009999; /* Darker cyan/teal for text contrast */
+  --primary-text:  #FFFFFF;
+  --primary-dark:  #006666;
+  --primary-tint:  rgba(0, 153, 153, 0.15);
+  --accent:        #009999;
+}
+
+/* Base Transition for Theme Change */
+body {
+  transition: background-color 0.4s ease, color 0.4s ease;
+=======
+>>>>>>> 509c1f718279cf25d9eb8ac81e99a0cfd8f5aa44
 }
 
 *,*::before,*::after{ box-sizing:border-box; }
@@ -59,17 +118,25 @@
   *,*::before,*::after{ animation-duration:0.001ms !important; transition-duration:0.001ms !important; }
 }
 
-body{
-  margin:0;
-  background:var(--bg);
-  color:var(--ink);
-  font-family:var(--font-body);
-  font-size:15px;
-  line-height:1.55;
-  -webkit-font-smoothing:antialiased;
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
-h1,h2,h3,h4{ font-family:var(--font-display); font-weight:500; margin:0; color:var(--ink); }
-p{ margin:0; color:var(--ink-muted); }
+
+input, textarea, select {
+  color: var(--text);
+  font-family: var(--font-body);
+}
+
+h1,h2,h3,h4{ font-family:var(--font-display); font-weight:500; margin:0; color:var(--text); }
+p{ margin:0; color:var(--text-muted); }
 button, select, input{ font-family:var(--font-body); }
 a{ color:var(--primary); }
 
@@ -315,7 +382,7 @@ input[type="range"]{
   border:1px solid transparent;
   cursor:pointer;
 }
-.btn--primary{ background:var(--primary); color:#fff; }
+.btn--primary{ background:var(--primary); color:var(--primary-text); }
 .btn--primary:hover{ background:var(--primary-dark); }
 .btn--primary:disabled{ opacity:0.55; cursor:progress; }
 .btn--block{ width:100%; }
@@ -866,5 +933,31 @@ ul.sim-history{ list-style:none; margin:0; padding:0; }
   .health-hero{ flex-direction:column; align-items:flex-start; }
   .health-components{ grid-template-columns:1fr 1fr; }
   .compare-grid{ grid-template-columns:1fr 1fr; }
+}
+
+
+/* MoneyKal Brand Logo Classes */
+.brand-logo {
+  height: 44px;
+  width: auto;
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.4)) drop-shadow(0 0 20px rgba(0, 229, 255, 0.2));
+  transition: transform 0.3s;
+}
+.brand-logo-footer {
+  height: 52px;
+  width: auto;
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.4)) drop-shadow(0 0 20px rgba(0, 229, 255, 0.2));
+  margin-bottom: 16px;
+}
+.brand-logo-sidebar {
+  height: 40px;
+  width: auto;
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.4)) drop-shadow(0 0 20px rgba(0, 229, 255, 0.2));
+}
+.brand-logo-auth {
+  height: 56px;
+  width: auto;
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.4)) drop-shadow(0 0 20px rgba(0, 229, 255, 0.2));
+  margin: 0 auto;
 }
 

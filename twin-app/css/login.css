@@ -1,0 +1,320 @@
+/* ==========================================================================
+   MONEYKAL LOGIN STYLES (HDFC INSPIRED)
+   ========================================================================== */
+
+body.auth-page {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: #008080; /* Darker Cyan/Teal background */
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.hdfc-layout {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  position: relative;
+}
+
+/* ==========================================================================
+   LEFT SIDE (BRANDING & IMAGE)
+   ========================================================================== */
+.brand-panel {
+  flex: 1;
+  position: relative;
+  padding: 40px 60px;
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-header {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  margin-bottom: 48px;
+}
+
+.brand-logo-auth {
+  height: 48px;
+  background: #fff;
+  padding: 8px 16px;
+  border-radius: 4px;
+}
+
+.brand-tags {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-tags .dot {
+  font-size: 10px;
+}
+
+/* Cinematic Text Reveal */
+.cinematic-text-container {
+  position: relative;
+  height: 200px;
+  max-width: 500px;
+  z-index: 10;
+}
+
+.cinematic-phrase {
+  position: absolute;
+  top: 0; left: 0;
+  opacity: 0;
+  visibility: hidden;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 48px;
+  font-weight: 700;
+  color: #FFFFFF;
+  line-height: 1.2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2em;
+}
+
+.cinematic-phrase.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.cinematic-phrase .word {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.cinematic-phrase.active .word {
+  animation: revealWord 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes revealWord {
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.cinematic-phrase.exit .word {
+  animation: exitWord 0.6s cubic-bezier(0.5, 0, 0.5, 1) forwards;
+}
+
+@keyframes exitWord {
+  0% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-20px); }
+}
+
+/* Human Image */
+.brand-hero-image {
+  position: absolute;
+  bottom: 0;
+  left: 5%;
+  height: 65vh; /* Scale to fit bottom */
+  width: auto;
+  object-fit: contain;
+  z-index: 1;
+}
+
+/* ==========================================================================
+   RIGHT SIDE (WHITE OVERLAY LOGIN CARD)
+   ========================================================================== */
+.login-panel-wrapper {
+  width: 45%;
+  min-width: 500px;
+  background: #FFFFFF;
+  position: relative;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Adding a subtle background pattern could go here */
+}
+
+.login-card {
+  width: 100%;
+  max-width: 480px;
+  background: #FFFFFF;
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+  border: 1px solid #E5E7EB;
+}
+
+.login-title {
+  text-align: center;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1F2937;
+  margin-bottom: 32px;
+}
+
+/* Tabs */
+.login-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  border-bottom: 1px solid #E5E7EB;
+  margin-bottom: 32px;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 12px;
+  color: #9CA3AF;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  position: relative;
+}
+
+.tab-icon {
+  width: 16px; height: 16px;
+}
+
+.tab.active {
+  color: #1F2937;
+}
+
+.tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0; right: 0;
+  height: 3px;
+  background: #006666; /* Deep cyan for active tab */
+}
+
+/* Form Fields */
+.auth-error {
+  color: #EF4444;
+  font-size: 13px;
+  margin-bottom: 16px;
+  text-align: center;
+  display: none;
+  font-weight: 500;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.hdfc-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.hdfc-field span {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1F2937;
+  margin-bottom: 8px;
+}
+
+.hdfc-field .req {
+  color: #EF4444;
+}
+
+.ob-input {
+  width: 100%;
+  border: 1px solid #D1D5DB;
+  border-radius: 4px;
+  padding: 12px;
+  font-size: 14px;
+  color: #1F2937;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.ob-input:focus {
+  border-color: #008080;
+}
+
+/* Actions */
+.form-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 32px;
+}
+
+.action-link {
+  color: #4B5563;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.action-link:hover {
+  color: #008080;
+}
+
+/* Login Button */
+.btn-login-solid {
+  background: #006666; /* Solid dark cyan to match the HDFC blue weight */
+  color: #FFFFFF;
+  border: none;
+  border-radius: 4px;
+  padding: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  width: 100%;
+  cursor: pointer;
+  margin-bottom: 32px;
+  transition: background 0.2s;
+}
+
+.btn-login-solid:hover {
+  background: #004d4d;
+}
+
+/* Footer Links */
+.auth-footer-links {
+  text-align: center;
+  font-size: 13px;
+  color: #6B7280;
+  line-height: 2;
+}
+
+.bold-link {
+  color: #006666;
+  font-weight: 700;
+  text-decoration: none;
+}
+.bold-link:hover {
+  text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .hdfc-layout {
+    flex-direction: column;
+  }
+  .brand-panel {
+    flex: none;
+    height: 50vh;
+    padding: 24px;
+  }
+  .brand-hero-image {
+    height: 40vh;
+  }
+  .login-panel-wrapper {
+    width: 100%;
+    height: 50vh;
+    padding: 24px;
+  }
+  .login-card {
+    padding: 24px;
+  }
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
