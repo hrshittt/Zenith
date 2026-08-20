@@ -56,56 +56,56 @@ function switchView(name) {
     document.getElementById('topbarSub').textContent = titleSet[1];
   }
   if (name === 'ask') {
-      resetChat();
-      loadChatSessions();
+    resetChat();
+    loadChatSessions();
   }
   if (name === 'simulate' && pendingScenarioPrefill) {
-      scenarioInput.value = pendingScenarioPrefill;
-      pendingScenarioPrefill = null;
-      scenarioInput.focus();
+    scenarioInput.value = pendingScenarioPrefill;
+    pendingScenarioPrefill = null;
+    scenarioInput.focus();
   }
   if (name === 'overview' && isStartup()) {
-      loadStartupOverviewAndRender();
+    loadStartupOverviewAndRender();
   }
   if (name === 'hisaab' && isStartup()) {
-      loadHisaabAndRender();
+    loadHisaabAndRender();
   }
   if (name === 'alerts' && isStartup()) {
-      renderAlertsView();
+    renderAlertsView();
   }
   if (name === 'reports' && isStartup()) {
-      renderReportsView();
+    renderReportsView();
   }
 }
 
 // Profile switching logic removed, account type is strictly enforced by the backend
 
 async function loadProfileAndRender() {
-    try {
-        currentProfile = await window.api.fetchProfile();
-        if (currentProfile) {
-            // /profile/me resolves the real profile.key for the logged-in user
-            // (e.g. "custom_<username>" or "startup") — always trust it over
-            // whatever state.profileKey happened to default to, so a page
-            // refresh/relogin doesn't leave chat/simulate calls sending a
-            // stale "individual" key that matches no row in the DB.
-            state.profileKey = currentProfile.key;
-            applyPersonaNav(currentProfile.key === 'startup' ? 'startup' : 'individual');
-            if (currentProfile.key === 'startup') {
-                await loadStartupOverviewAndRender();
-            } else {
-                renderOverview();
-            }
-            renderSimulateForm();
-            resetSimResults();
-            renderSimHistory();
-            resetChat();
-        }
-    } catch(e) {
-        // Not logged in or no profile
-        localStorage.removeItem('twin_session');
-        window.location.href = '/login.html';
+  try {
+    currentProfile = await window.api.fetchProfile();
+    if (currentProfile) {
+      // /profile/me resolves the real profile.key for the logged-in user
+      // (e.g. "custom_<username>" or "startup") — always trust it over
+      // whatever state.profileKey happened to default to, so a page
+      // refresh/relogin doesn't leave chat/simulate calls sending a
+      // stale "individual" key that matches no row in the DB.
+      state.profileKey = currentProfile.key;
+      applyPersonaNav(currentProfile.key === 'startup' ? 'startup' : 'individual');
+      if (currentProfile.key === 'startup') {
+        await loadStartupOverviewAndRender();
+      } else {
+        renderOverview();
+      }
+      renderSimulateForm();
+      resetSimResults();
+      renderSimHistory();
+      resetChat();
     }
+  } catch (e) {
+    // Not logged in or no profile
+    localStorage.removeItem('twin_session');
+    window.location.href = '/login.html';
+  }
 }
 
 /* ============ Sparkline (inline SVG, no chart library) ============ */
@@ -467,8 +467,8 @@ const btnNewChat = document.getElementById('btnNewChat');
 let currentSessionId = null;
 
 const SUGGESTIONS = [
-  'What\u2019s my emergency buffer?', 
-  'How are my savings trending?', 
+  'What\u2019s my emergency buffer?',
+  'How are my savings trending?',
   'Am I on track for my goal?'
 ];
 
@@ -476,8 +476,8 @@ async function loadChatSessions() {
   if (!profile()) return;
   try {
     const sessions = await window.api.getChatSessions(state.profileKey);
-    if(chatSessionList) {
-        chatSessionList.innerHTML = sessions.map(s => `
+    if (chatSessionList) {
+      chatSessionList.innerHTML = sessions.map(s => `
           <li style="padding: 8px; border-radius: 4px; cursor: pointer; font-size: 13px; background: ${s.id === currentSessionId ? 'var(--bg-subtle)' : 'transparent'}; position: relative;" 
               onclick="switchSession('${s.id}')">
             <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -494,44 +494,44 @@ async function loadChatSessions() {
           </li>
         `).join('');
     }
-  } catch(e) {
+  } catch (e) {
     console.error(e);
   }
 }
 
-window.toggleChatMenu = function(id) {
-    event.stopPropagation();
-    const menu = document.getElementById('chat-menu-' + id);
-    const isVisible = menu.style.display === 'block';
-    
-    // hide all other menus
-    document.querySelectorAll('.chat-menu-dropdown').forEach(el => el.style.display = 'none');
-    
-    if (!isVisible) {
-        menu.style.display = 'block';
-    }
+window.toggleChatMenu = function (id) {
+  event.stopPropagation();
+  const menu = document.getElementById('chat-menu-' + id);
+  const isVisible = menu.style.display === 'block';
+
+  // hide all other menus
+  document.querySelectorAll('.chat-menu-dropdown').forEach(el => el.style.display = 'none');
+
+  if (!isVisible) {
+    menu.style.display = 'block';
+  }
 }
 
 document.addEventListener('click', () => {
-    document.querySelectorAll('.chat-menu-dropdown').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.chat-menu-dropdown').forEach(el => el.style.display = 'none');
 });
 
-window.renameSession = async function(id, currentTitle) {
+window.renameSession = async function (id, currentTitle) {
   const newTitle = prompt("Enter new title for the chat:", currentTitle);
   if (newTitle && newTitle.trim() !== "" && newTitle !== currentTitle) {
     try {
       await window.api.renameChatSession(id, newTitle.trim(), state.profileKey);
       loadChatSessions();
       if (currentSessionId === id) {
-          // If needed, update current session's UI beyond the sidebar list
+        // If needed, update current session's UI beyond the sidebar list
       }
-    } catch(e) {
+    } catch (e) {
       alert("Failed to rename chat session.");
     }
   }
 };
 
-window.deleteSession = async function(id) {
+window.deleteSession = async function (id) {
   if (confirm("Are you sure you want to delete this chat session?")) {
     try {
       await window.api.deleteChatSession(id, state.profileKey);
@@ -540,35 +540,35 @@ window.deleteSession = async function(id) {
         resetChat();
       }
       loadChatSessions();
-    } catch(e) {
+    } catch (e) {
       alert("Failed to delete chat session.");
     }
   }
 };
 
-window.switchSession = async function(id) {
+window.switchSession = async function (id) {
   currentSessionId = id;
   chatLog.innerHTML = '';
   chatSuggestions.innerHTML = '';
-  loadChatSessions(); 
-  
+  loadChatSessions();
+
   try {
     const session = await window.api.getChatSession(id, state.profileKey);
     session.messages.forEach(m => {
       const who = m.role === 'assistant' || m.role === 'twin' ? 'twin' : 'user';
       addBubble(who, m.content);
     });
-  } catch(e) {
+  } catch (e) {
     addBubble('twin', 'Failed to load chat history.');
   }
 };
 
-if(btnNewChat) {
-    btnNewChat.addEventListener('click', () => {
-      currentSessionId = null;
-      resetChat();
-      loadChatSessions();
-    });
+if (btnNewChat) {
+  btnNewChat.addEventListener('click', () => {
+    currentSessionId = null;
+    resetChat();
+    loadChatSessions();
+  });
 }
 
 function seedChat() {
@@ -587,13 +587,13 @@ function resetChat() {
   state.chatSeeded = false;
   currentSessionId = null;
   if (document.getElementById('view-ask').classList.contains('is-active')) {
-      seedChat();
+    seedChat();
   }
   renderSuggestions();
 }
 
 function renderSuggestions() {
-  if(currentSessionId) return; // Don't show suggestions in an active session
+  if (currentSessionId) return; // Don't show suggestions in an active session
   const suggestions = (isStartup() && typeof STARTUP_CHAT_SUGGESTIONS !== 'undefined') ? STARTUP_CHAT_SUGGESTIONS : SUGGESTIONS;
   chatSuggestions.innerHTML = suggestions.map(s => `<button type="button" class="chip">${s}</button>`).join('');
   chatSuggestions.querySelectorAll('.chip').forEach(chip => {
@@ -632,37 +632,37 @@ chatForm.addEventListener('submit', async e => {
   e.preventDefault();
   const text = chatInput.value.trim();
   if (!text) return;
-  
+
   addBubble('user', text);
   chatInput.value = '';
   chatSuggestions.innerHTML = ''; // Hide suggestions once chatting
-  
+
   const thinking = document.createElement('div');
   thinking.className = 'bubble bubble--twin bubble--thinking';
   thinking.textContent = 'Thinking…';
   chatLog.appendChild(thinking);
   chatLog.scrollTop = chatLog.scrollHeight;
-  
+
   try {
-      const res = await window.api.askTwin(text, currentSessionId, state.profileKey);
-      currentSessionId = res.session_id;
-      thinking.remove();
-      // "Show the financial insight visually first, then let Tathya explain it" —
-      // a numeric/trend question gets a chart (built entirely from the Financial
-      // Twin's own metrics) ahead of the text answer; simple questions get none.
-      if (res.visualization && typeof suChatVizHtml === 'function') {
-        const vizHtml = suChatVizHtml(res.visualization);
-        if (vizHtml) {
-          const vizDiv = document.createElement('div');
-          vizDiv.innerHTML = vizHtml;
-          chatLog.appendChild(vizDiv.firstElementChild);
-        }
+    const res = await window.api.askTwin(text, currentSessionId, state.profileKey);
+    currentSessionId = res.session_id;
+    thinking.remove();
+    // "Show the financial insight visually first, then let Tathya explain it" —
+    // a numeric/trend question gets a chart (built entirely from the Financial
+    // Twin's own metrics) ahead of the text answer; simple questions get none.
+    if (res.visualization && typeof suChatVizHtml === 'function') {
+      const vizHtml = suChatVizHtml(res.visualization);
+      if (vizHtml) {
+        const vizDiv = document.createElement('div');
+        vizDiv.innerHTML = vizHtml;
+        chatLog.appendChild(vizDiv.firstElementChild);
       }
-      addBubble('twin', res.answer);
-      loadChatSessions();
-  } catch(e) {
-      thinking.remove();
-      addBubble('twin', "I encountered an error connecting to the backend.");
+    }
+    addBubble('twin', res.answer);
+    loadChatSessions();
+  } catch (e) {
+    thinking.remove();
+    addBubble('twin', "I encountered an error connecting to the backend.");
   }
 });
 
@@ -671,20 +671,20 @@ let obUserId = "";
 /* ============ Init ============ */
 const savedSession = localStorage.getItem('twin_session');
 if (savedSession) {
-    const session = JSON.parse(savedSession);
-    loadProfileAndRender().then(() => { 
-        renderAgents(); 
-        switchView("overview"); 
-    });
+  const session = JSON.parse(savedSession);
+  loadProfileAndRender().then(() => {
+    renderAgents();
+    switchView("overview");
+  });
 } else {
-    window.location.href = '/login.html';
+  window.location.href = '/login.html';
 }
 
 /* ============ Logout ============ */
 const btnLogout = document.getElementById("btnLogout");
 if (btnLogout) {
-    btnLogout.addEventListener("click", () => {
-        localStorage.removeItem('twin_session');
-        window.location.href = '/';
-    });
+  btnLogout.addEventListener("click", () => {
+    localStorage.removeItem('twin_session');
+    window.location.href = '/';
+  });
 }
