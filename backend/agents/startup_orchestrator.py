@@ -133,12 +133,18 @@ class StartupOrchestrator:
         goals = compute_goals(ctx, metrics)
         alerts = generate_alerts(ctx, metrics, goals)
 
+        from backend.services.startup_engine import build_expense_breakdown, build_revenue_breakdown
+        out_txns = [t for t in profile.startup_transactions if t.type == "out"]
+        in_txns = [t for t in profile.startup_transactions if t.type == "in"]
+
         data_ctx = {
             "currency": ctx.currency,
             "company": {"name": ctx.company_name, "stage": ctx.stage},
             "metrics": _metrics_to_dict(metrics),
             "goals": goals,
             "alerts": alerts[:3],
+            "expense_breakdown": build_expense_breakdown(ctx, out_txns),
+            "revenue_breakdown": build_revenue_breakdown(ctx, in_txns),
         }
 
         market_intents = _classify_market_intent(query)

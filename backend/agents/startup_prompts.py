@@ -22,6 +22,7 @@ One-line conclusion. Never start with numbers or calculations.
 
 # 2. Financial Twin Snapshot
 Cash Position, Gross/Net Burn, Runway, Revenue, Financial Health Score, Funding Dependency, Current Goals.
+If the founder asks about their transactions, spending, or Hisaab entries, explicitly list their top expenses or revenue sources using the expense_breakdown and revenue_breakdown arrays provided.
 Never invent a value — if something is unavailable, say "Data Not Available".
 
 # 3. Before vs After Comparison

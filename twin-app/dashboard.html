@@ -264,6 +264,9 @@
             <form class="chat-input" id="chatForm">
               <input type="text" id="chatInput" placeholder="Ask about your runway, savings, exposure…"
                 autocomplete="off">
+              <button type="button" class="btn btn--secondary" id="btnVoiceMode" title="Voice Mode">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+              </button>
               <button type="submit" class="btn btn--primary">Send</button>
             </form>
             <p class="chat-note">Answers are generated from your sample profile data — this is demo mode, not a live
@@ -314,11 +317,35 @@
     </div>
   </div>
 
+  <!-- ================= VOICE MODE OVERLAY ================= -->
+  <div id="voiceOverlay" class="voice-overlay hidden">
+    <button class="voice-overlay__close" id="btnVoiceClose" title="Exit Voice Mode">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+    </button>
+    
+    <div class="voice-overlay__content">
+      <div class="voice-orb-container">
+        <div class="voice-orb" id="voiceOrb"></div>
+        <div class="voice-orb-ring"></div>
+        <div class="voice-orb-ring delay"></div>
+      </div>
+      <h2 class="voice-status" id="voiceStatus">Tap to speak</h2>
+    </div>
+
+    <div class="voice-overlay__controls">
+      <button class="voice-btn" id="btnVoiceAction">
+        <svg id="iconVoiceMic" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+        <svg id="iconVoiceStop" viewBox="0 0 24 24" width="28" height="28" fill="currentColor" class="hidden"><rect x="6" y="6" width="12" height="12"></rect></svg>
+      </button>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="js/data.js?v=6"></script>
   <script src="js/api.js?v=6"></script>
   <script src="js/startup.js?v=6"></script>
   <script src="js/app.js?v=6"></script>
+  <script src="js/voice.js?v=1"></script>
 </body>
 
 </html>
