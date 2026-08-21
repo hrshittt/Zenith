@@ -738,12 +738,14 @@ function renderStartupHistoryAndAlerts(overview) {
   if (alertTitle) alertTitle.textContent = 'Risk alerts';
 
   const decisions = overview.recent_decisions || [];
-  document.getElementById('historyList').innerHTML = `<div class="decision-card-grid">${decisions.length ? decisions.map(suDecisionCardHtml).join('') : '<p class="empty-row">No decisions logged yet — try Simulate.</p>'
-    }</div>`;
+  document.getElementById('historyList').innerHTML = `<div class="decision-card-grid">${
+    decisions.length ? decisions.map(suDecisionCardHtml).join('') : '<p class="empty-row">No decisions logged yet — try Simulate.</p>'
+  }</div>`;
 
   const alerts = overview.alerts || [];
-  document.getElementById('alertList').innerHTML = `<div class="alert-severity-grid">${alerts.length ? alerts.map(suAlertCardHtml).join('') : '<p class="empty-row">No active alerts.</p>'
-    }</div>`;
+  document.getElementById('alertList').innerHTML = `<div class="alert-severity-grid">${
+    alerts.length ? alerts.map(suAlertCardHtml).join('') : '<p class="empty-row">No active alerts.</p>'
+  }</div>`;
 }
 
 async function loadStartupOverviewAndRender() {
