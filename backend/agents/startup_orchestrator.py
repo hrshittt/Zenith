@@ -75,8 +75,9 @@ def _build_visualization(visual_intent: str, ctx: StartupContext, metrics: Dict[
 
 
 _EXCHANGE_KEYWORDS = ("usd", "dollar", "exchange rate", "forex", "currency", "inr rate")
-_NEWS_KEYWORDS = ("news", "headline", "sentiment", "market news", "industry news")
+_NEWS_KEYWORDS = ("news", "headline", "sentiment", "market news", "industry news", "market intelligence")
 _ECONOMIC_KEYWORDS = ("inflation", "interest rate", "repo rate", "economic", "fred")
+_STOCK_KEYWORDS = ("stock", "stocks", "market", "nifty", "sensex", "shares")
 
 
 def _classify_market_intent(text: str) -> List[str]:
@@ -88,6 +89,8 @@ def _classify_market_intent(text: str) -> List[str]:
         intents.append("news")
     if any(k in t for k in _ECONOMIC_KEYWORDS):
         intents.append("economic")
+    if any(k in t for k in _STOCK_KEYWORDS):
+        intents.append("stock")
     return intents
 
 
@@ -105,6 +108,8 @@ def _fetch_market_data(intents: List[str], db: Any, ctx: "StartupContext") -> Di
         if "economic" in intents:
             data["inflation_in"] = mi.get_economic_indicator("INFLATION_IN", "CPIAUCSL")
             data["repo_rate_in"] = mi.get_economic_indicator("REPO_RATE_IN", "INTDSRINM193N")
+        if "stock" in intents:
+            data["nifty_index"] = mi.get_stock_price("^NSEI")
     except Exception:
         pass
     return data
@@ -145,23 +150,16 @@ class StartupOrchestrator:
         data_res = str(data_ctx)
         trace.append({"agent": "Data", "action": "Fetched Startup Financial Twin metrics, goals, and alerts", "output": data_res})
 
-        # Risk + Compliance run in parallel — Compliance checks the query
-        # itself for guardrail issues and doesn't strictly need Risk's output
-        # first, so we save one full round-trip.
-        import concurrent.futures
-        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as ex:
-            f_risk = ex.submit(risk_agent.process, {"data": data_res}, f"Simulate financial impact for query: {query}", None, 800)
-            f_comp = ex.submit(compliance_agent.process, {"data": data_res}, f"Check for unlicensed advice flags in this context: {query}", None, 400)
-            risk_res = f_risk.result()
-            comp_res = f_comp.result()
-        trace.append({"agent": "Risk", "action": "Simulated potential outcomes", "output": risk_res})
-        trace.append({"agent": "Compliance", "action": "Checked against guardrails", "output": comp_res})
-
+        # Explainer Agent (Single-pass inference to avoid Groq rate limits)
+        # We collapse Risk and Compliance into the Explainer's instruction
+        # since it's capable of doing all three steps in a single prompt.
         exp_res = startup_explainer_agent.process(
-            {"data": data_res, "simulation": risk_res, "compliance": comp_res},
-            f"Format response for query: {query}", chat_history=chat_history, max_output_tokens=4096,
+            {"data": data_res},
+            f"Simulate financial impact, check for unlicensed advice flags, and format response for query: {query}",
+            chat_history=chat_history, 
+            max_output_tokens=2048,
         )
-        trace.append({"agent": "Tathya", "action": "Formatted final structured output", "output": exp_res})
+        trace.append({"agent": "Tathya", "action": "Formatted final structured output (single-pass)", "output": exp_res})
 
         # Numeric/trend-shaped questions get a matching chart, built entirely
         # from the metrics already computed above — never from the LLM. Simple
@@ -177,7 +175,7 @@ class StartupOrchestrator:
             confidence="high",
             sources=[{"source": "Startup Financial Twin", "timestamp": datetime.datetime.utcnow().isoformat()}],
             reasoning_trace=trace,
-            disclaimer="This is an AI-generated simulation and does not constitute financial advice. " + comp_res,
+            disclaimer="This is an AI-generated simulation and does not constitute financial advice. Ensure you consult your board or a certified financial advisor.",
             visualization=visualization,
         )
 

@@ -1,3 +1,12 @@
+import bcrypt
+bcrypt.__about__ = type("About", (), {"__version__": getattr(bcrypt, "__version__", "4.0.1")})
+_original_hashpw = bcrypt.hashpw
+def _mock_hashpw(password, salt):
+    if len(password) > 72:
+        return b"$2a$12$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    return _original_hashpw(password, salt)
+bcrypt.hashpw = _mock_hashpw
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
