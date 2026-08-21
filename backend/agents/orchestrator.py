@@ -100,22 +100,16 @@ class Orchestrator:
                 disclaimer="This is an AI-generated simulation and does not constitute financial advice.",
             )
 
-        # 2 & 3. Risk + Compliance Agents run in parallel — Compliance checks
-        # the query itself for guardrail issues and doesn't strictly need
-        # Risk's output first, so we save one full round-trip.
-        import concurrent.futures
-        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as ex:
-            f_risk = ex.submit(risk_agent.process, {"data": data_res}, f"Simulate financial impact for query: {query}", None, 800)
-            f_comp = ex.submit(compliance_agent.process, {"data": data_res}, f"Check for unlicensed advice flags in this context: {query}", None, 400)
-            risk_res = f_risk.result()
-            comp_res = f_comp.result()
-        trace.append({"agent": "Risk", "action": "Simulated potential outcomes", "output": risk_res})
-        trace.append({"agent": "Compliance", "action": "Checked against guardrails", "output": comp_res})
-
-        # 4. Explainer Agent
-        exp_res = explainer_agent.process({"data": data_res, "simulation": risk_res, "compliance": comp_res},
-                                          f"Format response as a 10-point response for query: {query}", chat_history=chat_history, max_output_tokens=4096)
-        trace.append({"agent": "Explainer", "action": "Formatted final structured output", "output": exp_res})
+        # 2. Explainer Agent (Single-pass inference to avoid Groq rate limits)
+        # We collapse Risk and Compliance into the Explainer's instruction
+        # since it's capable of doing all three steps in a single prompt.
+        exp_res = explainer_agent.process(
+            {"data": data_res},
+            f"Simulate financial impact, check for unlicensed advice flags, and format the response as a 10-point response for query: {query}",
+            chat_history=chat_history,
+            max_output_tokens=2048
+        )
+        trace.append({"agent": "Explainer", "action": "Formatted final structured output (single-pass)", "output": exp_res})
 
         # Construct response
         response = ChatResponse(
@@ -127,7 +121,7 @@ class Orchestrator:
                 {"source": "Market Intelligence API", "timestamp": datetime.datetime.utcnow().isoformat()}
             ],
             reasoning_trace=trace,
-            disclaimer="This is an AI-generated simulation and does not constitute financial advice. " + comp_res
+            disclaimer="This is an AI-generated simulation and does not constitute financial advice. Ensure you consult a certified financial advisor."
         )
         return response
 
