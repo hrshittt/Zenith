@@ -129,17 +129,10 @@ document.addEventListener('DOMContentLoaded', () => {
       ctx.beginPath();
       ctx.moveTo(startX, startY);
       ctx.lineTo(startX, startY - (startY - trunkEnd) * Math.min(wowProgress * 5, 1));
-<<<<<<< HEAD
-      ctx.strokeStyle = '#00FFFF';
-      ctx.lineWidth = 3;
-      ctx.shadowBlur = 20;
-      ctx.shadowColor = '#00FFFF';
-=======
       ctx.strokeStyle = '#00E5FF';
       ctx.lineWidth = 3;
       ctx.shadowBlur = 20;
       ctx.shadowColor = '#00E5FF';
->>>>>>> 509c1f718279cf25d9eb8ac81e99a0cfd8f5aa44
       ctx.stroke();
 
       // Splitting paths
@@ -163,17 +156,10 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.quadraticCurveTo(cx, cy, ex, ey);
             
             if (p.isHighlight) {
-<<<<<<< HEAD
-              ctx.strokeStyle = '#00FFFF'; // Cyan highlights
-              ctx.lineWidth = 2;
-              ctx.shadowBlur = 15;
-              ctx.shadowColor = '#00FFFF';
-=======
               ctx.strokeStyle = '#00A368'; // Green highlights
               ctx.lineWidth = 2;
               ctx.shadowBlur = 15;
               ctx.shadowColor = '#00A368';
->>>>>>> 509c1f718279cf25d9eb8ac81e99a0cfd8f5aa44
             } else {
               // Fade out non-highlights as progress approaches 1
               const fade = Math.max(0, 1 - Math.pow(wowProgress, 4));
@@ -193,109 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
   drawCanvas();
 
   // ==========================================
-<<<<<<< HEAD
-  // 3.5 TYPEWRITER ANIMATION
-  // ==========================================
-  const typewriterContainer = document.getElementById('typewriter-container');
-  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  if (typewriterContainer && !prefersReducedMotion) {
-    const textElement = typewriterContainer.querySelector('.typewriter-text');
-    const fullText = "See Tomorrow. Decide Today.";
-    let currentIndex = 0;
-    let isDeleting = false;
-    
-    // Clear text immediately for typing effect
-    textElement.textContent = '';
-
-    function typeLoop() {
-      let typeSpeed = isDeleting ? 30 + Math.random() * 30 : 50 + Math.random() * 50;
-      
-      if (!isDeleting && currentIndex === fullText.length) {
-        typeSpeed = 2000; // Pause at end
-        isDeleting = true;
-      } else if (isDeleting && currentIndex === 0) {
-        isDeleting = false;
-        typeSpeed = 1000; // Pause at start
-      }
-
-      textElement.textContent = fullText.substring(0, currentIndex);
-
-      if (isDeleting) {
-        currentIndex--;
-        if (currentIndex < 0) currentIndex = 0;
-      } else {
-        currentIndex++;
-        if (currentIndex > fullText.length) currentIndex = fullText.length;
-      }
-
-      setTimeout(typeLoop, typeSpeed);
-    }
-
-    // Start typing after initial hero GSAP animation
-    setTimeout(typeLoop, 1500);
-  }
-
-  // Final CTA Typewriter
-  const ctaTypewriter = document.getElementById('typewriter-cta-container');
-  let ctaFullText = "you can see them.";
-  
-  // Expose function for i18n to change the target text
-  window.updateTypewriterLanguage = function(lang) {
-    if (lang === 'hi') {
-      ctaFullText = "आप उन्हें देख सकते हैं।";
-    } else {
-      ctaFullText = "you can see them.";
-    }
-  };
-
-  // Set initial based on current lang
-  if (window.currentLang === 'hi') {
-    ctaFullText = "आप उन्हें देख सकते हैं।";
-  }
-
-  if (ctaTypewriter && !prefersReducedMotion) {
-    const ctaTextElement = ctaTypewriter.querySelector('.typewriter-text-cta');
-    let ctaIndex = 0;
-    let ctaIsDeleting = false;
-    
-    ctaTextElement.textContent = '';
-
-    function ctaTypeLoop() {
-      let speed = ctaIsDeleting ? 60 + Math.random() * 30 : 80 + Math.random() * 50;
-      
-      if (!ctaIsDeleting && ctaIndex >= ctaFullText.length) {
-        speed = 2500; // Pause at end
-        ctaIsDeleting = true;
-      } else if (ctaIsDeleting && ctaIndex === 0) {
-        ctaIsDeleting = false;
-        speed = 1000; // Pause at start
-      }
-
-      // Safeguard against string shrinking while deleting
-      if (ctaIndex > ctaFullText.length) ctaIndex = ctaFullText.length;
-
-      ctaTextElement.textContent = ctaFullText.substring(0, ctaIndex);
-
-      if (ctaIsDeleting) {
-        ctaIndex--;
-        if (ctaIndex < 0) ctaIndex = 0;
-      } else {
-        ctaIndex++;
-        if (ctaIndex > ctaFullText.length) ctaIndex = ctaFullText.length;
-      }
-
-      setTimeout(ctaTypeLoop, speed);
-    }
-
-    setTimeout(ctaTypeLoop, 1000);
-  }
-
-  // ==========================================
-  // 4. GSAP SCROLL CHOREOGRAPHY - EDITORIAL
-=======
   // 4. GSAP SCROLL CHOREOGRAPHY
->>>>>>> 509c1f718279cf25d9eb8ac81e99a0cfd8f5aa44
   // ==========================================
   gsap.registerPlugin(ScrollTrigger);
 
@@ -306,53 +190,6 @@ document.addEventListener('DOMContentLoaded', () => {
     toggleClass: {className: 'scrolled', targets: '.landing-nav'}
   });
 
-<<<<<<< HEAD
-  // --- SCENE 01: Hero Sequence ---
-  const heroTL = gsap.timeline();
-  
-  heroTL.fromTo('.hero-welcome-label', 
-    { opacity: 0, x: -20 },
-    { opacity: 1, x: 0, duration: 1, ease: 'power2.out', delay: 0.2 }
-  )
-  .fromTo('.hero-brand-massive', 
-    { opacity: 0, y: 50, filter: 'blur(10px)' },
-    { opacity: 1, y: 0, filter: 'blur(0px)', duration: 1.5, ease: 'power3.out' }, "-=0.5"
-  )
-  .fromTo('.hero-tagline-official', 
-    { opacity: 0, y: 20 },
-    { opacity: 1, y: 0, duration: 1, ease: 'power2.out' }, "-=0.8"
-  )
-  .fromTo('.hero-cta-group', 
-    { opacity: 0, y: 20 },
-    { opacity: 1, y: 0, duration: 1, ease: 'power2.out' }, "-=0.6"
-  )
-  .fromTo('.hero-dashboard-main',
-    { opacity: 0, x: 50, rotationY: -10 },
-    { opacity: 1, x: 0, rotationY: -15, duration: 1.5, ease: 'power3.out' }, "-=1.0"
-  )
-  .fromTo('.hero-float-card',
-    { opacity: 0, y: 30, scale: 0.9 },
-    { opacity: 1, y: 0, scale: 1, duration: 1, stagger: 0.3, ease: 'back.out(1.7)' }, "-=0.8"
-  );
-
-  // Floating continuous animation for cards
-  gsap.to('.hero-float-card', {
-    y: -15,
-    duration: 3,
-    yoyo: true,
-    repeat: -1,
-    ease: 'sine.inOut',
-    stagger: {
-      each: 0.5,
-      from: "random"
-    }
-  });
-
-  // Fade out hero content on scroll down
-  gsap.to('.hero-split-container', {
-    scrollTrigger: {
-      trigger: '.scene-hero-new',
-=======
   // --- SCENE 01: Hero Typography Sequence ---
   const heroTL = gsap.timeline();
   
@@ -390,60 +227,10 @@ document.addEventListener('DOMContentLoaded', () => {
   gsap.to('.hero-typography', {
     scrollTrigger: {
       trigger: '.scene-hero',
->>>>>>> 509c1f718279cf25d9eb8ac81e99a0cfd8f5aa44
       start: 'top top',
       end: 'bottom top',
       scrub: true
     },
-<<<<<<< HEAD
-    y: -100,
-    opacity: 0
-  });
-
-
-  // --- SCENE 03: Financial Twin Mockup ---
-  const twinTL = gsap.timeline({
-    scrollTrigger: {
-      trigger: '.scene-twin-mockup',
-      start: 'top 50%',
-    }
-  });
-
-  twinTL.fromTo('.twin-text > *', 
-          { opacity: 0, x: 30 }, 
-          { opacity: 1, x: 0, duration: 1, stagger: 0.2 })
-        .fromTo('.mockup-ui', { opacity: 0, x: -50, rotationY: 10 }, { opacity: 1, x: 0, rotationY: 0, duration: 1.2, ease: "power3.out" }, "-=0.8")
-        .fromTo('.mockup-card', { opacity: 0, y: 20 }, { opacity: 1, y: 0, stagger: 0.2, duration: 0.8 }, "-=0.5")
-        .fromTo('.twin-abstract-market', { opacity: 0, filter: 'blur(10px)' }, { opacity: 1, filter: 'blur(0px)', duration: 1.5, ease: "power2.out" }, "-=1.0");
-
-
-  // --- SCENE 06: Solutions ---
-  gsap.fromTo('.solutions-title', 
-    { opacity: 0, y: 30 },
-    { opacity: 1, y: 0, duration: 1, scrollTrigger: { trigger: '.scene-solutions-rich', start: 'top 70%' } }
-  );
-
-  gsap.fromTo('.type-card', 
-    { opacity: 0, y: 50 },
-    { opacity: 1, y: 0, stagger: 0.2, duration: 1, ease: 'power3.out', scrollTrigger: { trigger: '.type-grid', start: 'top 70%' } }
-  );
-
-  // --- SCENE 07: Vibrant Final CTA ---
-  gsap.fromTo('.final-content', 
-    { opacity: 0, scale: 0.9 },
-    { opacity: 1, scale: 1, duration: 1.5, ease: 'power3.out', scrollTrigger: { trigger: '.scene-final-vibrant', start: 'top 60%' } }
-  );
-
-  // Cinematic Quote Animation
-  gsap.fromTo('.quote-text', 
-    { opacity: 0, y: 30 }, 
-    { opacity: 1, y: 0, duration: 1.5, ease: 'power3.out', scrollTrigger: { trigger: '.scene-quote', start: 'top 60%' } }
-  );
-  gsap.fromTo('.quote-author', 
-    { opacity: 0, y: 20 }, 
-    { opacity: 1, y: 0, duration: 1.5, delay: 0.4, ease: 'power3.out', scrollTrigger: { trigger: '.scene-quote', start: 'top 60%' } }
-  );
-=======
     y: 150,
     opacity: 0
   });
@@ -615,5 +402,4 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
->>>>>>> 509c1f718279cf25d9eb8ac81e99a0cfd8f5aa44
 });
