@@ -94,7 +94,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof addBubble === 'function') {
       addBubble('user', text);
     }
-
     try {
       const res = await window.api.askTwin(text, currentSessionId || null);
 
@@ -120,7 +119,6 @@ document.addEventListener('DOMContentLoaded', () => {
       if (typeof loadChatSessions === 'function') {
           loadChatSessions();
       }
-
       const answer = res.answer || "I'm sorry, I couldn't process that.";
       isProcessing = false;
       
