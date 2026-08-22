@@ -12,7 +12,11 @@
     // Redirect if already logged in
     const sess = JSON.parse(localStorage.getItem('twin_session') || '{}');
     if (sess.token) {
-      window.location.href = '/dashboard.html';
+      if (sess.profileKey) {
+          window.location.href = '/dashboard.html';
+      } else {
+          window.location.href = '/register.html?resume=true';
+      }
     }
   </script>
   <style>

@@ -16,7 +16,7 @@ async def lifespan(app: FastAPI):
     yield
     stop_scheduler()
 
-from backend.routers import profile, twin, onboarding, auth, startup
+from backend.routers import auth, profile, twin, onboarding, startup, zoho
 
 app = FastAPI(title="Agentic Financial Decision Twin", lifespan=lifespan)
 
@@ -25,6 +25,7 @@ app.include_router(profile.router)
 app.include_router(twin.router)
 app.include_router(onboarding.router)
 app.include_router(startup.router)
+app.include_router(zoho.router)
 
 # Allow CORS for the frontend
 app.add_middleware(
