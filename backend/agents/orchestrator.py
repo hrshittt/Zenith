@@ -33,7 +33,7 @@ ones. Do not repeat the recommendation — this is pure financial education. Res
 _mi_cache = {"data": None, "ts": 0}
 
 class Orchestrator:
-    def process_query(self, profile: Any, query: str, chat_history: List[Dict[str, str]] = None) -> ChatResponse:
+    def process_query(self, profile: Any, query: str, chat_history: List[Dict[str, str]] = None, db: Any = None) -> ChatResponse:
         trace = []
 
         # 0. Fetch Market Intelligence Context (cached for 5 minutes to avoid slow repeated calls)

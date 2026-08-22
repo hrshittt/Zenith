@@ -91,6 +91,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const persona = localStorage.getItem('twin_persona') || 'individual';
     const currentSessionId = localStorage.getItem('twin_chat_session') || "";
 
+    if (typeof addBubble === 'function') {
+      addBubble('user', text);
+    }
     try {
       const res = await window.api.askTwin(text, currentSessionId || null);
 
@@ -98,6 +101,24 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('twin_chat_session', res.session_id);
       }
 
+      if (typeof addBubble === 'function' && res) {
+        if (res.visualization && typeof suChatVizHtml === 'function') {
+          const vizHtml = suChatVizHtml(res.visualization);
+          if (vizHtml) {
+            const vizDiv = document.createElement('div');
+            vizDiv.innerHTML = vizHtml;
+            const chatLog = document.getElementById('chatLog');
+            if (chatLog) {
+              chatLog.appendChild(vizDiv.firstElementChild);
+            }
+          }
+        }
+        addBubble('twin', res.answer);
+      }
+      
+      if (typeof loadChatSessions === 'function') {
+          loadChatSessions();
+      }
       const answer = res.answer || "I'm sorry, I couldn't process that.";
       isProcessing = false;
       
@@ -130,56 +151,58 @@ document.addEventListener('DOMContentLoaded', () => {
     voiceOrb.style.transform = `scale(1)`;
   }
 
-  function speakResponse(text) {
-    if (!window.speechSynthesis) {
-      setVoiceState('idle');
-      return;
-    }
-
+  async function speakResponse(text) {
     isSpeaking = true;
     setVoiceState('speaking');
-    window.speechSynthesis.cancel();
-
-    const msg = new SpeechSynthesisUtterance(cleanTextForSpeech(text));
     
-    // Attempt to pick a premium/smooth voice
-    const voices = window.speechSynthesis.getVoices();
-    const premiumVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Samantha') || v.name.includes('Neural')));
-    if (premiumVoice) msg.voice = premiumVoice;
-
-    msg.rate = 1.05;
-
-    msg.onstart = () => {
-      startOrbPulseSimulation();
-    };
-
-    msg.onend = () => {
+    try {
+      const cleanText = cleanTextForSpeech(text);
+      const audioUrl = await window.api.getTTS(cleanText);
+      const audio = new Audio(audioUrl);
+      
+      audio.onplay = () => {
+        startOrbPulseSimulation();
+      };
+      
+      audio.onended = () => {
+        stopOrbPulseSimulation();
+        isSpeaking = false;
+        setVoiceState('idle');
+        URL.revokeObjectURL(audioUrl); // Clean up memory
+      };
+      
+      audio.onerror = (e) => {
+        console.error("Audio playback error", e);
+        stopOrbPulseSimulation();
+        isSpeaking = false;
+        setVoiceState('idle');
+        URL.revokeObjectURL(audioUrl);
+      };
+      
+      await audio.play();
+      
+      // Store reference to allow toggling/canceling
+      window.currentVoiceAudio = audio;
+      
+    } catch (err) {
+      console.error("TTS fetch error", err);
       stopOrbPulseSimulation();
       isSpeaking = false;
       setVoiceState('idle');
-    };
-
-    msg.onerror = (e) => {
-      console.error(e);
-      stopOrbPulseSimulation();
-      isSpeaking = false;
-      setVoiceState('idle');
-    };
-
-    window.speechSynthesis.speak(msg);
+    }
   }
-
-  // Workaround for voices loading async in some browsers
-  if (window.speechSynthesis) {
-    window.speechSynthesis.onvoiceschanged = () => {
-      window.speechSynthesis.getVoices();
-    };
+  function stopAudio() {
+    if (window.currentVoiceAudio) {
+      window.currentVoiceAudio.pause();
+      window.currentVoiceAudio.src = "";
+      window.currentVoiceAudio = null;
+    }
   }
 
   function toggleMic() {
     if (isListening || isSpeaking || isProcessing) {
       if (isListening && recognition) recognition.stop();
-      if (isSpeaking) window.speechSynthesis.cancel();
+      if (isSpeaking) stopAudio();
       isProcessing = false;
       isSpeaking = false;
       isListening = false;
@@ -187,7 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
       setVoiceState('idle');
     } else {
       if (recognition) {
-        window.speechSynthesis.cancel();
+        stopAudio();
         try {
           recognition.start();
         } catch(e) {}
@@ -207,7 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnVoiceClose) {
     btnVoiceClose.addEventListener('click', () => {
       if (recognition) recognition.stop();
-      window.speechSynthesis.cancel();
+      stopAudio();
       isListening = false;
       isSpeaking = false;
       isProcessing = false;
