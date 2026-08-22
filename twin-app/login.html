@@ -3,11 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Log In - Zenith</title>
+  <title>Log In - MoneyKal</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;1,400&family=Merriweather:wght@400;700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/login.css">
   <script>
     // Redirect if already logged in
     const sess = JSON.parse(localStorage.getItem('twin_session') || '{}');
@@ -19,71 +20,97 @@
       }
     }
   </script>
-  <style>
-    body.auth-page {
-      background: linear-gradient(135deg, #020B09 0%, #061F1A 100%);
-      color: var(--text);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-    }
-    .auth-container {
-      background: rgba(255,255,255,0.02);
-      border: 1px solid rgba(255,255,255,0.05);
-      border-radius: 12px;
-      padding: 48px;
-      width: 100%;
-      max-width: 400px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-    }
-    .auth-brand {
-      font-family: 'Newsreader', serif;
-      font-size: 32px;
-      color: #fff;
-      text-align: center;
-      margin-bottom: 32px;
-    }
-    .auth-error {
-      color: var(--warn);
-      font-size: 13px;
-      margin-bottom: 16px;
-      text-align: center;
-      display: none;
-    }
-    .auth-links {
-      margin-top: 24px;
-      text-align: center;
-      font-size: 13px;
-      color: var(--text-muted);
-    }
-    .auth-links a {
-      color: var(--primary);
-      text-decoration: none;
-    }
-  </style>
 </head>
-<body class="theme-dark auth-page">
+<body class="auth-page">
 
-  <div class="auth-container">
-    <div class="auth-brand">Zenith</div>
-    <div id="loginError" class="auth-error">Invalid credentials</div>
-    <form id="loginForm">
-      <label class="field">
-        <span>Email Address</span>
-        <input type="text" id="authEmail" class="ob-input" placeholder="user@example.com" required>
-      </label>
-      <label class="field">
-        <span>Password</span>
-        <input type="password" id="authPassword" class="ob-input" placeholder="Enter your password" required>
-      </label>
-      <button type="submit" class="btn btn--primary btn--block" id="btnLogin">Log In</button>
-    </form>
-    <div class="auth-links">
-      Don't have an account? <a href="/register.html">Get Started</a>
+  <div class="hdfc-layout">
+    
+    <!-- Left Background & Branding -->
+    <div class="brand-panel">
+      
+      <div class="brand-header">
+        <a href="/" class="brand-logo-link">
+          <img src="logo.png" alt="MoneyKal Logo" class="brand-logo-auth" />
+        </a>
+        <div class="brand-tags">
+          <span>Fast</span>
+          <span class="dot">&bull;</span>
+          <span>Online</span>
+          <span class="dot">&bull;</span>
+          <span>Intelligent</span>
+        </div>
+      </div>
+
+      <!-- Cinematic Text Reveal Container -->
+      <div class="cinematic-text-container">
+        <div class="cinematic-phrase active">
+          <span class="word">See</span> <span class="word">Tomorrow.</span>
+        </div>
+        <div class="cinematic-phrase">
+          <span class="word">Simulate</span> <span class="word">Decisions.</span>
+        </div>
+        <div class="cinematic-phrase">
+          <span class="word">Understand</span> <span class="word">Possibilities.</span>
+        </div>
+        <div class="cinematic-phrase">
+          <span class="word">Build</span> <span class="word">Your</span> <span class="word">Financial</span> <span class="word">Twin.</span>
+        </div>
+      </div>
+
+      <img src="sticker.png" alt="MoneyKal Users" class="brand-hero-image" />
     </div>
+
+    <!-- Right White Overlay Login Card -->
+    <div class="login-panel-wrapper">
+      <div class="login-card">
+        
+        <h2 class="login-title">Choose an option to login</h2>
+        
+        <!-- Tab Navigation (Visual only for now, default to User ID) -->
+        <div class="login-tabs">
+          <div class="tab">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon"><path d="M16 21v-2a4 4 0 0 0-4-4H5c-1.1 0-2 .9-2 2v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+            Account Number
+          </div>
+          <div class="tab active">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            User ID
+          </div>
+        </div>
+        
+        <div id="loginError" class="auth-error">Invalid credentials</div>
+        
+        <form id="loginForm">
+          <div class="form-grid">
+            <label class="field hdfc-field">
+              <span>User ID<span class="req">*</span></span>
+              <input type="text" id="authEmail" class="ob-input" placeholder="Enter User Id" required>
+            </label>
+            <label class="field hdfc-field">
+              <span>Password<span class="req">*</span></span>
+              <input type="password" id="authPassword" class="ob-input" placeholder="Enter Password" required>
+            </label>
+          </div>
+          
+          <div class="form-actions">
+            <a href="#" class="action-link">Unlock Account</a>
+            <a href="#" class="action-link">Forgot Password</a>
+          </div>
+
+          <button type="submit" class="btn-login-solid" id="btnLogin">LOGIN</button>
+        </form>
+        
+        <div class="auth-footer-links">
+          <p class="signup-text">Kindly <a href="/register.html" class="bold-link">Sign Up</a> if you are a new user.</p>
+          <p class="get-id-text"><a href="/register.html" class="bold-link">Create / Get User ID</a> If you have existing account details.</p>
+        </div>
+        
+      </div>
+    </div>
+    
   </div>
 
   <script src="js/auth.js"></script>
+  <script src="js/login-bg.js"></script>
 </body>
 </html>

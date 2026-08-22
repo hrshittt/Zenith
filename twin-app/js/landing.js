@@ -129,10 +129,10 @@ document.addEventListener('DOMContentLoaded', () => {
       ctx.beginPath();
       ctx.moveTo(startX, startY);
       ctx.lineTo(startX, startY - (startY - trunkEnd) * Math.min(wowProgress * 5, 1));
-      ctx.strokeStyle = '#00E5FF';
+      ctx.strokeStyle = '#00FFFF';
       ctx.lineWidth = 3;
       ctx.shadowBlur = 20;
-      ctx.shadowColor = '#00E5FF';
+      ctx.shadowColor = '#00FFFF';
       ctx.stroke();
 
       // Splitting paths
@@ -156,10 +156,10 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.quadraticCurveTo(cx, cy, ex, ey);
             
             if (p.isHighlight) {
-              ctx.strokeStyle = '#00A368'; // Green highlights
+              ctx.strokeStyle = '#00FFFF'; // Cyan highlights
               ctx.lineWidth = 2;
               ctx.shadowBlur = 15;
-              ctx.shadowColor = '#00A368';
+              ctx.shadowColor = '#00FFFF';
             } else {
               // Fade out non-highlights as progress approaches 1
               const fade = Math.max(0, 1 - Math.pow(wowProgress, 4));
@@ -179,7 +179,105 @@ document.addEventListener('DOMContentLoaded', () => {
   drawCanvas();
 
   // ==========================================
-  // 4. GSAP SCROLL CHOREOGRAPHY
+  // 3.5 TYPEWRITER ANIMATION
+  // ==========================================
+  const typewriterContainer = document.getElementById('typewriter-container');
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (typewriterContainer && !prefersReducedMotion) {
+    const textElement = typewriterContainer.querySelector('.typewriter-text');
+    const fullText = "See Tomorrow. Decide Today.";
+    let currentIndex = 0;
+    let isDeleting = false;
+    
+    // Clear text immediately for typing effect
+    textElement.textContent = '';
+
+    function typeLoop() {
+      let typeSpeed = isDeleting ? 30 + Math.random() * 30 : 50 + Math.random() * 50;
+      
+      if (!isDeleting && currentIndex === fullText.length) {
+        typeSpeed = 2000; // Pause at end
+        isDeleting = true;
+      } else if (isDeleting && currentIndex === 0) {
+        isDeleting = false;
+        typeSpeed = 1000; // Pause at start
+      }
+
+      textElement.textContent = fullText.substring(0, currentIndex);
+
+      if (isDeleting) {
+        currentIndex--;
+        if (currentIndex < 0) currentIndex = 0;
+      } else {
+        currentIndex++;
+        if (currentIndex > fullText.length) currentIndex = fullText.length;
+      }
+
+      setTimeout(typeLoop, typeSpeed);
+    }
+
+    // Start typing after initial hero GSAP animation
+    setTimeout(typeLoop, 1500);
+  }
+
+  // Final CTA Typewriter
+  const ctaTypewriter = document.getElementById('typewriter-cta-container');
+  let ctaFullText = "you can see them.";
+  
+  // Expose function for i18n to change the target text
+  window.updateTypewriterLanguage = function(lang) {
+    if (lang === 'hi') {
+      ctaFullText = "आप उन्हें देख सकते हैं।";
+    } else {
+      ctaFullText = "you can see them.";
+    }
+  };
+
+  // Set initial based on current lang
+  if (window.currentLang === 'hi') {
+    ctaFullText = "आप उन्हें देख सकते हैं।";
+  }
+
+  if (ctaTypewriter && !prefersReducedMotion) {
+    const ctaTextElement = ctaTypewriter.querySelector('.typewriter-text-cta');
+    let ctaIndex = 0;
+    let ctaIsDeleting = false;
+    
+    ctaTextElement.textContent = '';
+
+    function ctaTypeLoop() {
+      let speed = ctaIsDeleting ? 60 + Math.random() * 30 : 80 + Math.random() * 50;
+      
+      if (!ctaIsDeleting && ctaIndex >= ctaFullText.length) {
+        speed = 2500; // Pause at end
+        ctaIsDeleting = true;
+      } else if (ctaIsDeleting && ctaIndex === 0) {
+        ctaIsDeleting = false;
+        speed = 1000; // Pause at start
+      }
+
+      // Safeguard against string shrinking while deleting
+      if (ctaIndex > ctaFullText.length) ctaIndex = ctaFullText.length;
+
+      ctaTextElement.textContent = ctaFullText.substring(0, ctaIndex);
+
+      if (ctaIsDeleting) {
+        ctaIndex--;
+        if (ctaIndex < 0) ctaIndex = 0;
+      } else {
+        ctaIndex++;
+        if (ctaIndex > ctaFullText.length) ctaIndex = ctaFullText.length;
+      }
+
+      setTimeout(ctaTypeLoop, speed);
+    }
+
+    setTimeout(ctaTypeLoop, 1000);
+  }
+
+  // ==========================================
+  // 4. GSAP SCROLL CHOREOGRAPHY - EDITORIAL
   // ==========================================
   gsap.registerPlugin(ScrollTrigger);
 
@@ -190,216 +288,100 @@ document.addEventListener('DOMContentLoaded', () => {
     toggleClass: {className: 'scrolled', targets: '.landing-nav'}
   });
 
-  // --- SCENE 01: Hero Typography Sequence ---
+  // --- SCENE 01: Hero Sequence ---
   const heroTL = gsap.timeline();
   
-  // SEE THE FUTURE
-  heroTL.fromTo('.hero-word-1', 
-    { opacity: 0, filter: 'blur(10px)', scale: 1.1 },
-    { opacity: 1, filter: 'blur(0px)', scale: 1, duration: 1, ease: 'power2.out' }
+  heroTL.fromTo('.hero-welcome-label', 
+    { opacity: 0, x: -20 },
+    { opacity: 1, x: 0, duration: 1, ease: 'power2.out', delay: 0.2 }
   )
-  .to('.hero-word-1', { opacity: 0, filter: 'blur(10px)', scale: 0.9, duration: 1, delay: 0.5 })
-  
-  // MODEL THE OUTCOME
-  .fromTo('.hero-word-2', 
-    { opacity: 0, filter: 'blur(10px)', scale: 1.1 },
-    { opacity: 1, filter: 'blur(0px)', scale: 1, duration: 1, ease: 'power2.out' }, "-=0.5"
+  .fromTo('.hero-brand-massive', 
+    { opacity: 0, y: 50, filter: 'blur(10px)' },
+    { opacity: 1, y: 0, filter: 'blur(0px)', duration: 1.5, ease: 'power3.out' }, "-=0.5"
   )
-  .to('.hero-word-2', { opacity: 0, filter: 'blur(10px)', scale: 0.9, duration: 1, delay: 0.5 })
-  
-  // UNDERSTAND THE RISK
-  .fromTo('.hero-word-3', 
-    { opacity: 0, filter: 'blur(10px)', scale: 1.1 },
-    { opacity: 1, filter: 'blur(0px)', scale: 1, duration: 1, ease: 'power2.out' }, "-=0.5"
+  .fromTo('.hero-tagline-official', 
+    { opacity: 0, y: 20 },
+    { opacity: 1, y: 0, duration: 1, ease: 'power2.out' }, "-=0.8"
   )
-  .to('.hero-word-3', { opacity: 0, filter: 'blur(10px)', scale: 0.9, duration: 1, delay: 0.5 })
-  
-  // DECIDE WITH INTELLIGENCE
-  .fromTo('.hero-word-4', 
-    { opacity: 0, filter: 'blur(10px)', scale: 1.1 },
-    { opacity: 1, filter: 'blur(0px)', scale: 1, duration: 1.5, ease: 'power3.out' }, "-=0.5"
+  .fromTo('.hero-cta-group', 
+    { opacity: 0, y: 20 },
+    { opacity: 1, y: 0, duration: 1, ease: 'power2.out' }, "-=0.6"
   )
-  
-  // Reveal scroll indicator
-  .to('.hero-scroll-indicator', { opacity: 1, duration: 1 }, "-=1");
+  .fromTo('.hero-dashboard-main',
+    { opacity: 0, x: 50, rotationY: -10 },
+    { opacity: 1, x: 0, rotationY: -15, duration: 1.5, ease: 'power3.out' }, "-=1.0"
+  )
+  .fromTo('.hero-float-card',
+    { opacity: 0, y: 30, scale: 0.9 },
+    { opacity: 1, y: 0, scale: 1, duration: 1, stagger: 0.3, ease: 'back.out(1.7)' }, "-=0.8"
+  );
 
-  // Fade out hero on scroll
-  gsap.to('.hero-typography', {
+  // Floating continuous animation for cards
+  gsap.to('.hero-float-card', {
+    y: -15,
+    duration: 3,
+    yoyo: true,
+    repeat: -1,
+    ease: 'sine.inOut',
+    stagger: {
+      each: 0.5,
+      from: "random"
+    }
+  });
+
+  // Fade out hero content on scroll down
+  gsap.to('.hero-split-container', {
     scrollTrigger: {
-      trigger: '.scene-hero',
+      trigger: '.scene-hero-new',
       start: 'top top',
       end: 'bottom top',
       scrub: true
     },
-    y: 150,
+    y: -100,
     opacity: 0
   });
 
-  // --- SCENE 02: WOW Moment Canvas Scrub ---
-  const wowTL = gsap.timeline({
+
+  // --- SCENE 03: Financial Twin Mockup ---
+  const twinTL = gsap.timeline({
     scrollTrigger: {
-      trigger: '.scene-wow',
-      start: 'top top',
-      end: '+=3000', // Pin for 3000px of scrolling
-      pin: true,
-      scrub: 1 // Smooth scrubbing
+      trigger: '.scene-twin-mockup',
+      start: 'top 50%',
     }
   });
 
-  // Link scroll progress to canvas animation variable
-  wowTL.to({val: 0}, {
-    val: 1,
-    duration: 10,
-    onUpdate: function() {
-      wowProgress = this.targets()[0].val;
-    }
-  }, 0);
-
-  // Text appearance sequence during the WOW pin
-  wowTL.to('.wow-text-1', { opacity: 1, filter: 'blur(0px)', duration: 1 }, 1)
-       .to('.wow-text-1', { opacity: 0, filter: 'blur(10px)', duration: 1 }, 3)
-       .to('.wow-text-2', { opacity: 1, filter: 'blur(0px)', duration: 1 }, 4)
-       .to('.wow-text-2', { opacity: 0, filter: 'blur(10px)', duration: 1 }, 6)
-       .to('.wow-text-3', { opacity: 1, filter: 'blur(0px)', duration: 1 }, 7)
-       .to('.wow-text-3', { opacity: 0, filter: 'blur(10px)', duration: 1 }, 9);
+  twinTL.fromTo('.twin-text > *', 
+          { opacity: 0, x: 30 }, 
+          { opacity: 1, x: 0, duration: 1, stagger: 0.2 })
+        .fromTo('.mockup-ui', { opacity: 0, x: -50, rotationY: 10 }, { opacity: 1, x: 0, rotationY: 0, duration: 1.2, ease: "power3.out" }, "-=0.8")
+        .fromTo('.mockup-card', { opacity: 0, y: 20 }, { opacity: 1, y: 0, stagger: 0.2, duration: 0.8 }, "-=0.5")
+        .fromTo('.twin-abstract-market', { opacity: 0, filter: 'blur(10px)' }, { opacity: 1, filter: 'blur(0px)', duration: 1.5, ease: "power2.out" }, "-=1.0");
 
 
-  // --- SCENE 03 & 04: Story Assembly ---
-  const storySteps = document.querySelectorAll('.story-step');
-  storySteps.forEach(step => {
-    
-    // Text Reveal
-    gsap.to(step.querySelector('.story-content'), {
-      scrollTrigger: {
-        trigger: step,
-        start: 'top 70%',
-      },
-      opacity: 1,
-      y: 0,
-      duration: 1,
-      ease: 'power3.out'
-    });
+  // --- SCENE 06: Solutions ---
+  gsap.fromTo('.solutions-title', 
+    { opacity: 0, y: 30 },
+    { opacity: 1, y: 0, duration: 1, scrollTrigger: { trigger: '.scene-solutions-rich', start: 'top 70%' } }
+  );
 
-    // Layer Assembly (if layers exist)
-    const layers = step.querySelectorAll('.ui-layer');
-    if (layers.length > 0) {
-      gsap.to(layers, {
-        scrollTrigger: {
-          trigger: step,
-          start: 'top 60%',
-        },
-        opacity: 1,
-        stagger: 0.2,
-        duration: 1
-      });
-      
-      // Parallax on scroll
-      gsap.to(step.querySelector('.layer-front'), {
-        scrollTrigger: {
-          trigger: step,
-          start: 'top bottom',
-          end: 'bottom top',
-          scrub: true
-        },
-        y: -50
-      });
-      gsap.to(step.querySelector('.layer-back'), {
-        scrollTrigger: {
-          trigger: step,
-          start: 'top bottom',
-          end: 'bottom top',
-          scrub: true
-        },
-        y: 50
-      });
-    }
-  });
+  gsap.fromTo('.type-card', 
+    { opacity: 0, y: 50 },
+    { opacity: 1, y: 0, stagger: 0.2, duration: 1, ease: 'power3.out', scrollTrigger: { trigger: '.type-grid', start: 'top 70%' } }
+  );
 
-  // --- SCENE 06: Global Stream ---
-  // Horizontal scroll for the stream
-  const streamContainer = document.querySelector('.insight-stream');
-  if (streamContainer) {
-    const cards = document.querySelectorAll('.stream-card');
-    
-    // Calculate total scroll distance
-    const totalWidth = cards.length * 512; // 480 width + 32 gap
-    
-    gsap.to(streamContainer, {
-      x: () => -(totalWidth - window.innerWidth + 200),
-      ease: "none",
-      scrollTrigger: {
-        trigger: ".scene-insights",
-        start: "top top",
-        end: () => `+=${totalWidth}`,
-        pin: true,
-        scrub: 1
-      }
-    });
+  // --- SCENE 07: Vibrant Final CTA ---
+  gsap.fromTo('.final-content', 
+    { opacity: 0, scale: 0.9 },
+    { opacity: 1, scale: 1, duration: 1.5, ease: 'power3.out', scrollTrigger: { trigger: '.scene-final-vibrant', start: 'top 60%' } }
+  );
 
-    // Intersection observer for center scaling
-    const centerObserver = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          // Calculate distance from center of screen
-          const rect = entry.target.getBoundingClientRect();
-          const center = window.innerWidth / 2;
-          const cardCenter = rect.left + rect.width / 2;
-          const distance = Math.abs(center - cardCenter);
-          
-          if (distance < rect.width) {
-            entry.target.classList.add('is-center');
-          } else {
-            entry.target.classList.remove('is-center');
-          }
-        }
-      });
-    }, {
-      root: null,
-      rootMargin: '0px',
-      threshold: Array.from({length: 20}, (_, i) => i * 0.05) // Many thresholds for smooth triggering
-    });
-
-    cards.forEach(card => centerObserver.observe(card));
-  }
-
-  // --- SCENE 07: Solutions ---
-  const typeCards = document.querySelectorAll('.type-card');
-  if(typeCards.length > 0) {
-    gsap.to('.solutions-title', {
-      scrollTrigger: {
-        trigger: '.scene-solutions',
-        start: 'top 80%'
-      },
-      opacity: 1,
-      y: 0,
-      duration: 1
-    });
-
-    gsap.to(typeCards, {
-      scrollTrigger: {
-        trigger: '.type-grid',
-        start: 'top 80%'
-      },
-      opacity: 1,
-      y: 0,
-      stagger: 0.2,
-      duration: 1,
-      ease: 'power3.out'
-    });
-  }
-
-  // --- SCENE 08: Final CTA ---
-  if(document.querySelector('.scene-final')) {
-    gsap.to('.final-content', {
-      scrollTrigger: {
-        trigger: '.scene-final',
-        start: 'top 80%',
-        end: 'bottom 80%',
-        scrub: true
-      },
-      scale: 1,
-      opacity: 1
-    });
-  }
-
+  // Cinematic Quote Animation
+  gsap.fromTo('.quote-text', 
+    { opacity: 0, y: 30 }, 
+    { opacity: 1, y: 0, duration: 1.5, ease: 'power3.out', scrollTrigger: { trigger: '.scene-quote', start: 'top 60%' } }
+  );
+  gsap.fromTo('.quote-author', 
+    { opacity: 0, y: 20 }, 
+    { opacity: 1, y: 0, duration: 1.5, delay: 0.4, ease: 'power3.out', scrollTrigger: { trigger: '.scene-quote', start: 'top 60%' } }
+  );
 });
