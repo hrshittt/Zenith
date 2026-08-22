@@ -74,6 +74,11 @@ def chat_with_twin(req: ChatRequest, current_user: User = Depends(get_current_us
     else:
         session = db.query(ChatSession).filter(ChatSession.id == session_id, ChatSession.profile_id == profile.id).first()
         if not session:
+            # Check if it exists under a different profile to avoid IntegrityError
+            existing = db.query(ChatSession).filter(ChatSession.id == session_id).first()
+            if existing:
+                session_id = str(uuid.uuid4())
+            
             session = ChatSession(id=session_id, profile_id=profile.id, title=req.message[:30] + "...")
             db.add(session)
             
@@ -190,3 +195,22 @@ def simulate_scenario(req: ScenarioSimulateRequest, current_user: User = Depends
         return response
 
     return orchestrator.run_scenario_simulation(profile, scenario)
+
+
+from pydantic import BaseModel
+
+class TTSRequest(BaseModel):
+    text: str
+
+@router.post("/tts")
+async def generate_tts(req: TTSRequest):
+    import edge_tts
+    from fastapi.responses import StreamingResponse
+    
+    async def audio_generator():
+        communicate = edge_tts.Communicate(req.text, "en-US-AriaNeural")
+        async for chunk in communicate.stream():
+            if chunk["type"] == "audio":
+                yield chunk["data"]
+                
+    return StreamingResponse(audio_generator(), media_type="audio/mp3")
