@@ -51,7 +51,7 @@
         <svg id="theme-icon-moon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
         <svg id="theme-icon-sun" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
       </button>
-      <button id="lang-toggle" class="nav-text-btn"><span style="color: var(--primary);">EN</span> | हिं</button>
+      <button id="lang-toggle" class="nav-text-btn">EN | हिं</button>
     </div>
   </nav>
 
@@ -149,16 +149,30 @@
               <div class="mockup-card card-income">
                 <label data-i18n="mock-income">Income Stream</label>
                 <div class="mock-value">₹ 14,250,000</div>
-                <div class="mock-chart cyan-chart"></div>
+                <div class="mock-chart cyan-chart" style="position:relative; overflow:hidden;">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 40" preserveAspectRatio="none" style="width:100%; height:100%; display:block;">
+                    <path d="M0,38 L10,33 L20,36 L30,23 L40,26 L50,13 L60,18 L70,8 L80,10 L90,3 L100,2" fill="none" stroke="#00FFFF" stroke-width="2" />
+                  </svg>
+                </div>
               </div>
               <div class="mockup-card card-risk">
                 <label data-i18n="mock-risk">Exposure Risk</label>
                 <div class="mock-value purple-text">12.4%</div>
-                <div class="mock-chart purple-chart"></div>
+                <div class="mock-chart purple-chart" style="position:relative; overflow:hidden;">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 40" preserveAspectRatio="none" style="width:100%; height:100%; display:block;">
+                    <path d="M0,20 L10,10 L20,30 L30,5 L40,35 L50,15 L60,25 L70,10 L80,30 L90,15 L100,20" fill="none" stroke="#9D72FF" stroke-width="2" />
+                  </svg>
+                </div>
               </div>
               <div class="mockup-card card-main">
                 <label data-i18n="mock-forecast">Trajectory Forecast</label>
-                <div class="mock-main-chart"></div>
+                <div class="mock-main-chart" style="position:relative; overflow:hidden; border-top: none;">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120" preserveAspectRatio="none" style="width:100%; height:100%; display:block;">
+                    <line x1="0" y1="40" x2="200" y2="40" stroke="rgba(255,255,255,0.15)" stroke-width="1" stroke-dasharray="4" />
+                    <line x1="0" y1="80" x2="200" y2="80" stroke="rgba(255,255,255,0.15)" stroke-width="1" stroke-dasharray="4" />
+                    <path d="M0,118 L20,108 L40,113 L60,93 L80,98 L100,73 L120,83 L140,48 L160,58 L180,18 L200,8" fill="none" stroke="#00FFFF" stroke-width="3" />
+                  </svg>
+                </div>
               </div>
             </div>
           </div>

@@ -811,7 +811,7 @@ body.landing {
   font-size: 32px;
   font-family: var(--font-display);
   font-weight: 600;
-  color: var(--c-white);
+  color: #FFFFFF;
   margin-bottom: 16px;
 }
 
@@ -1011,39 +1011,39 @@ body.landing {
 /* Distinct Card Palettes */
 .mag-sage {
   background-color: var(--c-sage);
-  color: var(--c-charcoal);
+  color: #121212;
 }
 .mag-sage .mag-meta { color: #5B755B; }
 
 .mag-blue {
   background-color: var(--primary);
-  color: var(--primary-text);
+  color: #FFFFFF;
 }
-.mag-blue .mag-meta { color: var(--primary-text); opacity: 0.8; }
+.mag-blue .mag-meta { color: rgba(255, 255, 255, 0.8); }
 
 .mag-lavender {
   background-color: var(--c-lavender);
-  color: var(--c-charcoal);
+  color: #121212;
 }
 .mag-lavender .mag-meta { color: var(--c-purple); }
 
 .mag-amber {
   background-color: var(--c-amber);
-  color: var(--c-charcoal);
+  color: #121212;
 }
 .mag-amber .mag-meta { color: #D66D00; }
 
 .mag-cyan {
   background-color: var(--accent);
-  color: var(--c-blue-dark);
+  color: #0A192F;
 }
 .mag-cyan .mag-meta { color: rgba(10, 25, 47, 0.6); }
 
 .mag-lime {
   background-color: var(--c-cyan);
-  color: var(--c-charcoal);
+  color: #121212;
 }
-.mag-lime .mag-meta { color: var(--c-charcoal); opacity: 0.8; }
+.mag-lime .mag-meta { color: rgba(18, 18, 18, 0.8); }
 
 /* ==========================================================================
    SCENE 06: SOLUTIONS

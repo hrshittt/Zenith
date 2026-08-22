@@ -54,7 +54,7 @@ const translations = {
 };
 
 window.currentLang = localStorage.getItem('moneykal_lang') || 'en';
-window.currentTheme = localStorage.getItem('moneykal_theme') || 'dark';
+window.currentTheme = localStorage.getItem('moneykal_theme') || 'light';
 
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
@@ -99,9 +99,9 @@ function applyTranslations(lang) {
   const langBtn = document.getElementById('lang-toggle');
   if (langBtn) {
     if (lang === 'hi') {
-      langBtn.innerHTML = 'EN | <span style="color: var(--primary);">हिं</span>';
+      langBtn.innerHTML = '<span style="opacity: 0.5;">EN</span> | <strong style="opacity: 1;">हिं</strong>';
     } else {
-      langBtn.innerHTML = '<span style="color: var(--primary);">EN</span> | हिं';
+      langBtn.innerHTML = '<strong style="opacity: 1;">EN</strong> | <span style="opacity: 0.5;">हिं</span>';
     }
   }
 

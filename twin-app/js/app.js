@@ -575,10 +575,25 @@ function seedChat() {
   if (!profile()) return;
   if (state.chatSeeded || currentSessionId) return;
   state.chatSeeded = true;
-  const greeting = isStartup()
-    ? `Hi — I'm Tathya, grounded in your Startup Financial Twin. Ask me about your cash, burn, runway, revenue, funding, or anything else.`
-    : `Hi — I’m grounded in your custom financial profile. Ask me about your runway, savings, exposure, or anything else.`;
-  addBubble('twin', greeting);
+  
+  const greetings = [
+    "Ready to explore some scenarios?",
+    "What financial future shall we map out today?",
+    "How can I help optimize your strategy?",
+    "Let's simulate your next big decision.",
+    "Ask me anything about your digital twin.",
+    "Ready to run some financial simulations?"
+  ];
+  const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
+  
+  const greetingEl = document.querySelector('.chat-greeting h2');
+  if (greetingEl) {
+    greetingEl.textContent = randomGreeting;
+  }
+  
+  const chatGreeting = document.getElementById('chatGreeting');
+  if (chatGreeting) chatGreeting.classList.remove('hidden');
+  
   renderSuggestions();
 }
 
@@ -602,6 +617,9 @@ function renderSuggestions() {
 }
 
 function addBubble(who, text) {
+  const chatGreeting = document.getElementById('chatGreeting');
+  if (chatGreeting) chatGreeting.classList.add('hidden');
+
   const div = document.createElement('div');
   div.className = 'bubble bubble--' + who;
 

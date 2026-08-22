@@ -224,8 +224,9 @@ body.auth-page {
   color: #EF4444;
 }
 
-.ob-input {
+.login-card .ob-input {
   width: 100%;
+  background: #FFFFFF;
   border: 1px solid #D1D5DB;
   border-radius: 4px;
   padding: 12px;
@@ -236,7 +237,7 @@ body.auth-page {
   box-sizing: border-box;
 }
 
-.ob-input:focus {
+.login-card .ob-input:focus {
   border-color: #008080;
 }
 
