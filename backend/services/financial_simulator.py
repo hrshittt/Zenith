@@ -276,7 +276,12 @@ def calc_invest_monthly(ctx: FinancialContext, amount: float, months: float):
     new_surplus = ctx.surplus - amount
 
     timeline = []
+    running_savings = ctx.savings
+    prev = 0
     for m in pick_milestones(months_i):
+        running_savings += new_surplus * (m - prev)
+        prev = m
+        buffer = (running_savings / ctx.expenses) if ctx.expenses > 0 else None
         fv = sip_future_value(amount, m)
         invested = amount * m
         timeline.append({
@@ -284,16 +289,23 @@ def calc_invest_monthly(ctx: FinancialContext, amount: float, months: float):
             "invested_total": round(invested, 2),
             "projected_value": round(fv, 2),
             "estimated_gain": round(fv - invested, 2),
+            "emergency_buffer_months": round(buffer, 1) if buffer is not None else None,
         })
+
+    goal_progress_after_pct = None
+    if ctx.goal_target:
+        saved_so_far = ctx.goal_target * ((ctx.goal_progress_pct or 0) / 100)
+        saved_after = min(saved_so_far + max(new_surplus, 0) * months_i, ctx.goal_target)
+        goal_progress_after_pct = round((saved_after / ctx.goal_target) * 100, 1)
 
     impact = {
         "monthly_surplus_before": round(ctx.surplus, 2),
         "monthly_surplus_after": round(new_surplus, 2),
         "savings_impact": f"Liquid savings are untouched — {ctx.currency}{amount:,.0f}/month is redirected into a new investment instead.",
         "emergency_buffer_before_months": round(ctx.buffer_months, 1) if ctx.buffer_months is not None else None,
-        "emergency_buffer_after_months": round(ctx.buffer_months, 1) if ctx.buffer_months is not None else None,
+        "emergency_buffer_after_months": timeline[-1]["emergency_buffer_months"] if timeline else None,
         "goal_progress_before_pct": ctx.goal_progress_pct,
-        "goal_progress_after_pct": ctx.goal_progress_pct,
+        "goal_progress_after_pct": goal_progress_after_pct,
         "investment_contribution": round(amount, 2),
     }
     assumptions = [
@@ -326,6 +338,12 @@ def calc_emi_affordability(ctx: FinancialContext, emi_amount: float):
             "emergency_buffer_months": round(buffer, 1) if buffer is not None else None,
         })
 
+    goal_progress_after_pct = None
+    if ctx.goal_target:
+        saved_so_far = ctx.goal_target * ((ctx.goal_progress_pct or 0) / 100)
+        saved_after = min(saved_so_far + max(new_surplus, 0) * 36, ctx.goal_target)
+        goal_progress_after_pct = round((saved_after / ctx.goal_target) * 100, 1)
+
     if new_surplus < 0:
         verdict = "not recommended"
     elif foir is not None and foir > 0.4:
@@ -340,7 +358,7 @@ def calc_emi_affordability(ctx: FinancialContext, emi_amount: float):
         "emergency_buffer_before_months": round(ctx.buffer_months, 1) if ctx.buffer_months is not None else None,
         "emergency_buffer_after_months": timeline[-1]["emergency_buffer_months"] if timeline else None,
         "goal_progress_before_pct": ctx.goal_progress_pct,
-        "goal_progress_after_pct": ctx.goal_progress_pct,
+        "goal_progress_after_pct": goal_progress_after_pct,
         "foir_pct": round(foir * 100, 1) if foir is not None else None,
         "affordability_verdict": verdict,
     }
@@ -401,6 +419,8 @@ def calc_increase_savings(ctx: FinancialContext, amount: float):
         "Goal timeline assumes your current savings trend continues at a constant monthly rate.",
     ]
     risks = []
+    if amount > ctx.surplus:
+        risks.append(f"This commitment is larger than your current monthly surplus of {ctx.currency}{ctx.surplus:,.0f} — you'd be committing more extra savings than you currently have left over each month.")
     if ctx.expenses and amount > ctx.expenses * 0.5:
         risks.append("This is a large cut relative to your current monthly expenses — double check it's realistic before committing.")
     return impact, timeline, assumptions, risks
@@ -451,10 +471,12 @@ def calc_income_loss(ctx: FinancialContext, months: float):
     timeline = []
     for m in pick_milestones(months_i):
         remaining = ctx.savings - ctx.expenses * m
+        buffer = (max(remaining, 0) / ctx.expenses) if ctx.expenses > 0 else None
         timeline.append({
             "label": format_months(m), "months": m,
             "remaining_savings": round(max(remaining, 0), 2),
             "shortfall": round(max(-remaining, 0), 2),
+            "emergency_buffer_months": round(buffer, 1) if buffer is not None else None,
         })
 
     coverage = ctx.buffer_months
@@ -463,6 +485,7 @@ def calc_income_loss(ctx: FinancialContext, months: float):
         "monthly_surplus_after": round(-ctx.expenses, 2),
         "savings_impact": f"Savings deplete by {ctx.currency}{ctx.expenses:,.0f}/month with no income coming in.",
         "emergency_buffer_before_months": round(coverage, 1) if coverage is not None else None,
+        "emergency_buffer_after_months": timeline[-1]["emergency_buffer_months"] if timeline else None,
         "coverage_months": round(coverage, 1) if coverage is not None else None,
         "requested_months": months_i,
         "goal_progress_before_pct": ctx.goal_progress_pct,
