@@ -139,9 +139,52 @@ async function addStartupTransaction(payload) {
     return await res.json();
 }
 
+async function updateStartupTransaction(txnId, payload) {
+    const res = await fetch(`${API_BASE}/startup/hisaab/transactions/${txnId}`, {
+        method: "PUT",
+        headers: getHeaders(),
+        body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+        const detail = await res.json().catch(() => null);
+        throw new Error((detail && detail.detail) || "Failed to update transaction");
+    }
+    return await res.json();
+}
+
+async function deleteStartupTransaction(txnId) {
+    const res = await fetch(`${API_BASE}/startup/hisaab/transactions/${txnId}`, {
+        method: "DELETE",
+        headers: getHeaders()
+    });
+    if (!res.ok) {
+        const detail = await res.json().catch(() => null);
+        throw new Error((detail && detail.detail) || "Failed to delete transaction");
+    }
+    return await res.json();
+}
+
 async function fetchWeeklyReport() {
     const res = await fetch(`${API_BASE}/startup/reports/weekly`, { headers: getHeaders() });
     if (!res.ok) throw new Error("Failed to fetch weekly report");
+    return await res.json();
+}
+
+async function fetchWeeklySuggestions() {
+    const res = await fetch(`${API_BASE}/startup/reports/weekly-suggestions`, { headers: getHeaders() });
+    if (!res.ok) throw new Error("Failed to fetch weekly suggestions");
+    return await res.json();
+}
+
+async function fetchWeeklySuggestionsHistory() {
+    const res = await fetch(`${API_BASE}/startup/reports/weekly-suggestions/history`, { headers: getHeaders() });
+    if (!res.ok) throw new Error("Failed to fetch report history");
+    return await res.json();
+}
+
+async function fetchWeeklySuggestionsById(reportId) {
+    const res = await fetch(`${API_BASE}/startup/reports/weekly-suggestions/${reportId}`, { headers: getHeaders() });
+    if (!res.ok) throw new Error("Failed to fetch saved report");
     return await res.json();
 }
 
@@ -202,7 +245,12 @@ window.api = {
     fetchStartupOverview,
     fetchStartupHisaab,
     addStartupTransaction,
+    updateStartupTransaction,
+    deleteStartupTransaction,
     fetchWeeklyReport,
+    fetchWeeklySuggestions,
+    fetchWeeklySuggestionsHistory,
+    fetchWeeklySuggestionsById,
     getTTS
 };
 

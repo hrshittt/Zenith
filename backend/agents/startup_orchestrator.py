@@ -13,12 +13,13 @@ from typing import Any, Dict, List, Optional, Tuple
 from backend.agents.sub_agents import Agent, risk_agent, compliance_agent
 from backend.agents.startup_prompts import (
     STARTUP_EXPLAINER_SYSTEM_PROMPT, STARTUP_RECOMMEND_SYSTEM_PROMPT, STARTUP_TEACH_SYSTEM_PROMPT,
+    STARTUP_WEEKLY_SUGGESTIONS_SYSTEM_PROMPT,
 )
 from backend.schemas.api_models import ChatResponse, ScenarioSimulateResponse, StageTrace
 from backend.services.gemini_service import gemini_service
 from backend.services.startup_engine import (
     StartupContext, MetricResult, build_context, compute_metrics, compute_goals, generate_alerts,
-    metric_history, build_expense_breakdown,
+    metric_history, build_expense_breakdown, build_weekly_category_spend, flag_category_concerns,
 )
 from backend.services.startup_scenario import (
     classify_intent, parse_scenario, describe_understanding, run_calculator, validate_result,
@@ -298,6 +299,44 @@ class StartupOrchestrator:
             "This looks workable based on your current numbers — proceed, but keep watching runway and burn.",
             "Projected runway stays above the critical threshold given your current cash and burn trajectory.",
         )
+
+    def generate_weekly_suggestions(self, category_spend: Dict[str, Any], flags: List[Dict[str, Any]],
+                                     ctx: StartupContext, metrics: Dict[str, Any]) -> List[Dict[str, str]]:
+        """Rules already computed category_spend + flags — this only phrases
+        them. Never called with raw transactions; never invents numbers."""
+        if category_spend.get("status") != "actual":
+            return [{"title": "Not enough data yet", "detail": category_spend.get("note") or "Log a few weeks of expenses to unlock savings suggestions."}]
+
+        if gemini_service.available():
+            prompt = (
+                f"This week's total spend: {ctx.currency}{category_spend.get('this_week_total')}\n"
+                f"Last week's total spend: {ctx.currency}{category_spend.get('last_week_total')}\n"
+                f"Week-over-week change: {category_spend.get('pct_change')}%\n"
+                f"Category breakdown: {category_spend.get('categories')}\n"
+                f"Flags detected: {flags}\n"
+                f"Current runway: {metrics['runway'].display if metrics.get('runway') else 'unknown'}\n"
+                f"Financial health: {metrics['financial_health'].display if metrics.get('financial_health') else 'unknown'}\n"
+            )
+            data = gemini_service.generate_json(prompt, system_instruction=STARTUP_WEEKLY_SUGGESTIONS_SYSTEM_PROMPT, temperature=0.4)
+            if data and data.get("suggestions"):
+                return data["suggestions"]
+
+        return self._fallback_weekly_suggestions(category_spend, flags)
+
+    @staticmethod
+    def _fallback_weekly_suggestions(category_spend: Dict[str, Any], flags: List[Dict[str, Any]]) -> List[Dict[str, str]]:
+        if not flags:
+            total = category_spend.get("this_week_total") or 0
+            return [{"title": "Spending looks stable", "detail": f"Total spend this week was ₹{total:,.0f}, with no unusual category spikes detected."}]
+        out = []
+        for f in flags[:4]:
+            if f["type"] == "spike":
+                out.append({"title": f"{f['category']} spiked", "detail": f["detail"]})
+            elif f["type"] == "new_category":
+                out.append({"title": f"New: {f['category']}", "detail": f["detail"]})
+            elif f["type"] == "thin_runway":
+                out.append({"title": "Runway is tight", "detail": f["detail"]})
+        return out
 
     @staticmethod
     def _fallback_teaching(scenario_type):

@@ -35,6 +35,7 @@ class Profile(Base):
     startup_snapshots = relationship("StartupMetricSnapshot", back_populates="profile", cascade="all, delete-orphan")
     startup_transactions = relationship("StartupTransaction", back_populates="profile", cascade="all, delete-orphan")
     startup_decisions = relationship("StartupDecisionLog", back_populates="profile", cascade="all, delete-orphan")
+    startup_weekly_reports = relationship("StartupWeeklyReport", cascade="all, delete-orphan")
 
 class Alert(Base):
     __tablename__ = "alerts"
@@ -209,7 +210,9 @@ class StartupTransaction(Base):
     amount = Column(Float)
     description = Column(String)
     txn_date = Column(Date, default=lambda: datetime.utcnow().date())
+    source = Column(String, default="manual")  # 'manual' | 'auto' (Gmail, later)
     created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     profile = relationship("Profile", back_populates="startup_transactions")
 
@@ -227,3 +230,22 @@ class StartupDecisionLog(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     profile = relationship("Profile", back_populates="startup_decisions")
+
+
+class StartupWeeklyReport(Base):
+    """A saved snapshot of a Mon-Sun weekly spend + suggestions report. One row
+    per (profile, week_start) — idempotent, generated on-demand and cached here
+    so past weeks' reports stay stable even as new transactions get logged."""
+    __tablename__ = "startup_weekly_reports"
+    __table_args__ = (UniqueConstraint("profile_id", "week_start", name="uq_weekly_report_profile_week"),)
+    id = Column(Integer, primary_key=True, index=True)
+    profile_id = Column(Integer, ForeignKey("profiles.id"), index=True)
+    week_start = Column(Date, index=True)  # Monday
+    week_end = Column(Date)                # Sunday
+    currency = Column(String, default="₹")
+    category_spend = Column(JSON, default={})
+    flags = Column(JSON, default=[])
+    suggestions = Column(JSON, default=[])
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    profile = relationship("Profile")

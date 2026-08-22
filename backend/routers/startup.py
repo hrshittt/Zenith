@@ -1,19 +1,23 @@
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException
+from typing import List
 from sqlalchemy.orm import Session
 
 from backend.database import get_db
 from backend.core.auth import get_current_user
 from backend.models.domain import User, Profile, StartupMetricSnapshot, StartupTransaction, StartupDecisionLog
 from backend.schemas.startup_models import (
-    StartupOverviewResponse, TransactionCreate, TransactionResponse, HisaabSummaryResponse, WeeklyReportResponse,
+    StartupOverviewResponse, TransactionCreate, TransactionUpdate, TransactionResponse, HisaabSummaryResponse, WeeklyReportResponse,
+    WeeklySpendReportResponse, WeeklySpendReportListItem,
 )
-from backend.schemas.api_models import ScenarioSimulateResponse
+from backend.models.domain import StartupWeeklyReport
+from backend.schemas.api_models import ScenarioSimulateResponse, GenericResponse
 from backend.services.startup_engine import (
     build_context, compute_metrics, compute_goals, generate_alerts, capture_snapshot_if_needed,
     build_daily_brief, build_weekly_report, MetricResult,
     build_health_indicators, build_expense_breakdown, build_revenue_breakdown, metric_history,
+    build_weekly_category_spend, flag_category_concerns,
 )
 
 router = APIRouter(prefix="/startup", tags=["Startup"])
@@ -165,10 +169,16 @@ def get_hisaab(current_user: User = Depends(get_current_user), db: Session = Dep
     return {
         "currency": "₹", "money_in": round(money_in, 2), "money_out": round(money_out, 2), "net": round(money_in - money_out, 2),
         "by_category": by_category,
-        "transactions": [{
-            "id": t.id, "type": t.type, "category": t.category, "amount": t.amount, "description": t.description,
-            "txn_date": t.txn_date.isoformat(), "created_at": t.created_at.isoformat(),
-        } for t in txns],
+        "transactions": [_txn_to_dict(t) for t in txns],
+    }
+
+
+def _txn_to_dict(txn: StartupTransaction) -> dict:
+    return {
+        "id": txn.id, "type": txn.type, "category": txn.category, "amount": txn.amount, "description": txn.description,
+        "txn_date": txn.txn_date.isoformat(), "source": txn.source or "manual",
+        "created_at": txn.created_at.isoformat(),
+        "updated_at": txn.updated_at.isoformat() if txn.updated_at else None,
     }
 
 
@@ -182,14 +192,50 @@ def add_transaction(req: TransactionCreate, current_user: User = Depends(get_cur
 
     txn_date = date.fromisoformat(req.txn_date) if req.txn_date else date.today()
     txn = StartupTransaction(profile_id=profile.id, type=req.type, category=req.category or "Uncategorized",
-                              amount=req.amount, description=req.description, txn_date=txn_date)
+                              amount=req.amount, description=req.description, txn_date=txn_date,
+                              source=req.source or "manual")
     db.add(txn)
     db.commit()
     db.refresh(txn)
-    return {
-        "id": txn.id, "type": txn.type, "category": txn.category, "amount": txn.amount, "description": txn.description,
-        "txn_date": txn.txn_date.isoformat(), "created_at": txn.created_at.isoformat(),
-    }
+    return _txn_to_dict(txn)
+
+
+@router.put("/hisaab/transactions/{txn_id}", response_model=TransactionResponse)
+def update_transaction(txn_id: int, req: TransactionUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    profile = _get_startup_profile(current_user, db)
+    txn = db.query(StartupTransaction).filter(StartupTransaction.id == txn_id, StartupTransaction.profile_id == profile.id).first()
+    if not txn:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+
+    if req.type is not None:
+        if req.type not in ("in", "out"):
+            raise HTTPException(status_code=400, detail="type must be 'in' or 'out'")
+        txn.type = req.type
+    if req.category is not None:
+        txn.category = req.category or "Uncategorized"
+    if req.amount is not None:
+        if req.amount <= 0:
+            raise HTTPException(status_code=400, detail="amount must be a positive number")
+        txn.amount = req.amount
+    if req.description is not None:
+        txn.description = req.description
+    if req.txn_date is not None:
+        txn.txn_date = date.fromisoformat(req.txn_date)
+
+    db.commit()
+    db.refresh(txn)
+    return _txn_to_dict(txn)
+
+
+@router.delete("/hisaab/transactions/{txn_id}", response_model=GenericResponse)
+def delete_transaction(txn_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    profile = _get_startup_profile(current_user, db)
+    txn = db.query(StartupTransaction).filter(StartupTransaction.id == txn_id, StartupTransaction.profile_id == profile.id).first()
+    if not txn:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    db.delete(txn)
+    db.commit()
+    return {"success": True, "message": "Transaction deleted"}
 
 
 # ---------------------------------------------------------------------------
@@ -206,3 +252,83 @@ def get_weekly_report(current_user: User = Depends(get_current_user), db: Sessio
                  .order_by(StartupMetricSnapshot.snapshot_date).all())
     metrics = compute_metrics(ctx, snapshots)
     return build_weekly_report(ctx, metrics, snapshots)
+
+
+def _weekly_report_to_dict(r: StartupWeeklyReport) -> dict:
+    return {
+        "id": r.id, "week_start": r.week_start.isoformat(), "week_end": r.week_end.isoformat(),
+        "currency": r.currency or "₹", "category_spend": r.category_spend or {},
+        "flags": r.flags or [], "suggestions": r.suggestions or [],
+        "created_at": r.created_at.isoformat(),
+    }
+
+
+@router.get("/reports/weekly-suggestions", response_model=WeeklySpendReportResponse)
+def get_weekly_suggestions(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Generates (or returns the already-saved) report for the CURRENT
+    Mon-Sun calendar week. Idempotent: calling this repeatedly within the
+    same week regenerates the numbers fresh (since new transactions may have
+    been logged) but always overwrites the same row rather than creating
+    duplicates, keyed on (profile_id, week_start)."""
+    profile = _get_startup_profile(current_user, db)
+    sp = profile.startup_profile
+    ctx = build_context(sp)
+    snapshots = (db.query(StartupMetricSnapshot)
+                 .filter(StartupMetricSnapshot.profile_id == profile.id)
+                 .order_by(StartupMetricSnapshot.snapshot_date).all())
+    metrics = compute_metrics(ctx, snapshots)
+
+    transactions = db.query(StartupTransaction).filter(StartupTransaction.profile_id == profile.id).all()
+    category_spend = build_weekly_category_spend(transactions)
+    flags = flag_category_concerns(category_spend, ctx, metrics)
+
+    from backend.agents.startup_orchestrator import startup_orchestrator
+    suggestions = startup_orchestrator.generate_weekly_suggestions(category_spend, flags, ctx, metrics)
+
+    week_start = date.fromisoformat(category_spend["week_range"]["start"])
+    week_end = date.fromisoformat(category_spend["week_range"]["end"])
+
+    existing = db.query(StartupWeeklyReport).filter(
+        StartupWeeklyReport.profile_id == profile.id, StartupWeeklyReport.week_start == week_start
+    ).first()
+    if existing:
+        existing.week_end = week_end
+        existing.currency = ctx.currency
+        existing.category_spend = category_spend
+        existing.flags = flags
+        existing.suggestions = suggestions
+        report = existing
+    else:
+        report = StartupWeeklyReport(
+            profile_id=profile.id, week_start=week_start, week_end=week_end, currency=ctx.currency,
+            category_spend=category_spend, flags=flags, suggestions=suggestions,
+        )
+        db.add(report)
+    db.commit()
+    db.refresh(report)
+    return _weekly_report_to_dict(report)
+
+
+@router.get("/reports/weekly-suggestions/history", response_model=List[WeeklySpendReportListItem])
+def list_weekly_suggestions(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Past saved weekly reports, most recent first — for a 'view previous weeks' list."""
+    profile = _get_startup_profile(current_user, db)
+    reports = (db.query(StartupWeeklyReport).filter(StartupWeeklyReport.profile_id == profile.id)
+               .order_by(StartupWeeklyReport.week_start.desc()).limit(26).all())
+    return [{
+        "id": r.id, "week_start": r.week_start.isoformat(), "week_end": r.week_end.isoformat(),
+        "this_week_total": (r.category_spend or {}).get("this_week_total"),
+        "created_at": r.created_at.isoformat(),
+    } for r in reports]
+
+
+@router.get("/reports/weekly-suggestions/{report_id}", response_model=WeeklySpendReportResponse)
+def get_saved_weekly_report(report_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Fetch one specific past week's saved report by id, e.g. for re-downloading its PDF."""
+    profile = _get_startup_profile(current_user, db)
+    report = db.query(StartupWeeklyReport).filter(
+        StartupWeeklyReport.id == report_id, StartupWeeklyReport.profile_id == profile.id
+    ).first()
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+    return _weekly_report_to_dict(report)

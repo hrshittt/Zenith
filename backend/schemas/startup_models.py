@@ -173,6 +173,15 @@ class TransactionCreate(BaseModel):
     amount: float
     description: Optional[str] = None
     txn_date: Optional[str] = None
+    source: Optional[str] = "manual"  # 'manual' | 'auto'
+
+
+class TransactionUpdate(BaseModel):
+    type: Optional[str] = None
+    category: Optional[str] = None
+    amount: Optional[float] = None
+    description: Optional[str] = None
+    txn_date: Optional[str] = None
 
 
 class TransactionResponse(BaseModel):
@@ -182,7 +191,9 @@ class TransactionResponse(BaseModel):
     amount: float
     description: Optional[str]
     txn_date: str
+    source: str
     created_at: str
+    updated_at: Optional[str] = None
 
 
 class HisaabSummaryResponse(BaseModel):
@@ -203,3 +214,22 @@ class WeeklyReportResponse(BaseModel):
     health_delta: Optional[float] = None
     cash_delta: Optional[float] = None
     runway_delta: Optional[float] = None
+
+
+class WeeklySpendReportResponse(BaseModel):
+    id: int
+    week_start: str
+    week_end: str
+    currency: str
+    category_spend: Dict[str, Any]
+    flags: List[Dict[str, Any]]
+    suggestions: List[Dict[str, Any]]
+    created_at: str
+
+
+class WeeklySpendReportListItem(BaseModel):
+    id: int
+    week_start: str
+    week_end: str
+    this_week_total: Optional[float] = None
+    created_at: str

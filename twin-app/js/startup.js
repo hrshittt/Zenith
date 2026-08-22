@@ -9,6 +9,21 @@
 
 window.startupState = window.startupState || {};
 
+const HISAAB_CATEGORIES = {
+  in: ['Revenue', 'Funding', 'Refund', 'Interest income', 'Other income'],
+  out: ['Payroll', 'Rent', 'Software/Tools', 'Marketing', 'Travel', 'Utilities', 'Supplies', 'Professional fees', 'Taxes', 'Other expense']
+};
+
+let hxEditingId = null;
+
+function populateHisaabCategoryOptions() {
+  const typeSel = document.getElementById('hxType');
+  const catSel = document.getElementById('hxCategory');
+  if (!typeSel || !catSel) return;
+  const list = HISAAB_CATEGORIES[typeSel.value] || [];
+  catSel.innerHTML = list.map(c => `<option value="${c}">${c}</option>`).join('');
+}
+
 const STARTUP_SCENARIO_SUGGESTIONS = [
   'What happens if I hire 5 engineers?',
   'What if I raise ₹2 Cr?',
@@ -792,39 +807,118 @@ function renderHisaab(data) {
     </div>` : ''}`;
 
   const txns = data.transactions || [];
+  window.startupState.hisaabTxnsById = {};
+  txns.forEach(t => { window.startupState.hisaabTxnsById[t.id] = t; });
+
   document.getElementById('hisaabList').innerHTML = txns.length ? txns.map(t => `
-    <li class="hisaab-row">
+    <li class="hisaab-row" data-txn-id="${t.id}">
       <div>
         <p class="decision-list__title">${escapeHtml(t.category)}${t.description ? ' — ' + escapeHtml(t.description) : ''}</p>
-        <p class="decision-list__date">${t.txn_date}</p>
+        <p class="decision-list__date">${t.txn_date}${t.source === 'auto' ? ' · <span class="tag tag--neutral">auto</span>' : ''}</p>
       </div>
       <span class="hisaab-row__amount hisaab-row__amount--${t.type}">${t.type === 'in' ? '+' : '−'}${currency}${fmt(t.amount)}</span>
+      <div class="hisaab-row__actions">
+        <button type="button" class="hisaab-row__action-btn" data-action="edit" data-id="${t.id}">Edit</button>
+        <button type="button" class="hisaab-row__action-btn hisaab-row__action-btn--danger" data-action="delete" data-id="${t.id}">Delete</button>
+      </div>
     </li>`).join('') : '<li class="empty-row">No transactions logged yet.</li>';
+
+  document.querySelectorAll('#hisaabList [data-action="edit"]').forEach(btn => {
+    btn.addEventListener('click', () => startHisaabEdit(Number(btn.dataset.id)));
+  });
+  document.querySelectorAll('#hisaabList [data-action="delete"]').forEach(btn => {
+    btn.addEventListener('click', () => confirmHisaabDelete(Number(btn.dataset.id)));
+  });
+}
+
+function startHisaabEdit(txnId) {
+  const t = (window.startupState.hisaabTxnsById || {})[txnId];
+  if (!t) return;
+  hxEditingId = txnId;
+  document.getElementById('hxType').value = t.type;
+  populateHisaabCategoryOptions();
+  document.getElementById('hxCategory').value = t.category;
+  document.getElementById('hxAmount').value = t.amount;
+  document.getElementById('hxDate').value = t.txn_date;
+  document.getElementById('hxDescription').value = t.description || '';
+  document.getElementById('hxSubmitBtn').textContent = 'Save changes';
+  document.getElementById('hxCancelEditBtn').style.display = '';
+  document.getElementById('hisaabForm').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function cancelHisaabEdit() {
+  hxEditingId = null;
+  document.getElementById('hisaabForm').reset();
+  populateHisaabCategoryOptions();
+  setHisaabDateToday();
+  document.getElementById('hxSubmitBtn').textContent = 'Add';
+  document.getElementById('hxCancelEditBtn').style.display = 'none';
+}
+
+async function confirmHisaabDelete(txnId) {
+  if (!confirm('Delete this transaction? This cannot be undone.')) return;
+  try {
+    await window.api.deleteStartupTransaction(txnId);
+    if (hxEditingId === txnId) cancelHisaabEdit();
+    await loadHisaabAndRender();
+  } catch (e) {
+    alert('Failed to delete transaction: ' + (e.message || 'please try again.'));
+  }
+}
+
+function setHisaabDateToday() {
+  const dateEl = document.getElementById('hxDate');
+  if (dateEl && !dateEl.value) {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    dateEl.value = `${yyyy}-${mm}-${dd}`;
+  }
 }
 
 const hisaabFormEl = document.getElementById('hisaabForm');
 if (hisaabFormEl) {
+  const hxTypeEl = document.getElementById('hxType');
+  if (hxTypeEl) {
+    hxTypeEl.addEventListener('change', populateHisaabCategoryOptions);
+  }
+  populateHisaabCategoryOptions();
+  setHisaabDateToday();
+
   hisaabFormEl.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const btn = hisaabFormEl.querySelector('button[type="submit"]');
+    const btn = document.getElementById('hxSubmitBtn');
     btn.disabled = true;
     try {
       const amount = Number(document.getElementById('hxAmount').value);
-      await window.api.addStartupTransaction({
+      const payload = {
         type: document.getElementById('hxType').value,
-        category: document.getElementById('hxCategory').value.trim(),
+        category: document.getElementById('hxCategory').value,
         amount: amount,
-        description: document.getElementById('hxDescription').value.trim() || null
-      });
-      document.getElementById('hxCategory').value = '';
-      document.getElementById('hxAmount').value = '';
-      document.getElementById('hxDescription').value = '';
+        description: document.getElementById('hxDescription').value.trim() || null,
+        txn_date: document.getElementById('hxDate').value || null
+      };
+
+      if (hxEditingId) {
+        await window.api.updateStartupTransaction(hxEditingId, payload);
+      } else {
+        payload.source = 'manual';
+        await window.api.addStartupTransaction(payload);
+      }
+
+      cancelHisaabEdit();
       await loadHisaabAndRender();
     } catch (err) {
-      alert('Failed to add transaction: ' + (err.message || 'please try again.'));
+      alert('Failed to save transaction: ' + (err.message || 'please try again.'));
     }
     btn.disabled = false;
   });
+
+  const cancelBtn = document.getElementById('hxCancelEditBtn');
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', cancelHisaabEdit);
+  }
 }
 
 /* ============ Alerts ============ */
@@ -884,6 +978,190 @@ async function loadWeeklyReport() {
   }
 }
 
+function suFormatDateRange(startIso, endIso) {
+  const opts = { day: 'numeric', month: 'short', year: 'numeric' };
+  const s = new Date(startIso).toLocaleDateString('en-IN', opts);
+  const e = new Date(endIso).toLocaleDateString('en-IN', opts);
+  return `${s} – ${e}`;
+}
+
+function suWeeklyReportCardHtml(data) {
+  const currency = data.currency || '₹';
+  const spend = data.category_spend || {};
+  const companyName = (profile() && profile().persona) || 'Your Startup';
+  const generatedAt = new Date(data.created_at || Date.now()).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+  const totalDelta = (spend.pct_change !== null && spend.pct_change !== undefined) ? spend.pct_change : null;
+  const totalDeltaHtml = totalDelta !== null
+    ? `<span class="report-card__hero-delta report-card__hero-delta--${totalDelta > 0 ? 'up' : 'down'}">${totalDelta >= 0 ? '+' : ''}${totalDelta.toFixed(0)}% vs last week</span>`
+    : '';
+
+  const topCategory = (spend.categories && spend.categories.length) ? spend.categories[0] : null;
+  const flagCount = (data.flags || []).length;
+
+  let barsHtml = '';
+  if (spend.status === 'actual' && spend.categories && spend.categories.length) {
+    const maxVal = Math.max(...spend.categories.map(c => c.this_week), 1);
+    barsHtml = spend.categories.map(c => {
+      const pct = Math.max(4, Math.round((c.this_week / maxVal) * 100));
+      let tag = '';
+      if (c.is_new) tag = ' <span class="weekly-cat-list__delta weekly-cat-list__delta--new">New</span>';
+      else if (c.pct_change !== null && c.pct_change !== undefined && Math.abs(c.pct_change) >= 1) {
+        tag = ` <span class="weekly-cat-list__delta weekly-cat-list__delta--${c.pct_change > 0 ? 'up' : 'down'}">${c.pct_change >= 0 ? '+' : ''}${c.pct_change.toFixed(0)}%</span>`;
+      }
+      return `
+        <div class="report-card__bar-row">
+          <span class="report-card__bar-label">${escapeHtml(c.category)}${tag}</span>
+          <div class="report-card__bar-track"><div class="report-card__bar-fill" style="width:${pct}%;"></div></div>
+          <span class="report-card__bar-value">${currency}${fmt(c.this_week)}</span>
+        </div>`;
+    }).join('');
+  } else {
+    barsHtml = `<p class="sim-empty">${escapeHtml(spend.note || 'No categorized spending yet this week.')}</p>`;
+  }
+
+  const suggestions = data.suggestions || [];
+  const suggestionsHtml = suggestions.length
+    ? suggestions.map(s => `
+      <div class="suggestion-card">
+        <div class="suggestion-card__title">💡 ${escapeHtml(s.title)}</div>
+        <div class="suggestion-card__detail">${escapeHtml(s.detail)}</div>
+      </div>`).join('')
+    : '<p class="sim-empty">No suggestions available yet.</p>';
+
+  return `
+    <div class="report-card" id="weeklyReportCard">
+      <div class="report-card__masthead">
+        <div>
+          <div class="report-card__brand"><span class="brand__mark">◆</span> TWIN</div>
+          <div class="report-card__title">Weekly Spend Report</div>
+          <div class="report-card__range">${escapeHtml(companyName)} · ${suFormatDateRange(data.week_start, data.week_end)}</div>
+        </div>
+        <div class="report-card__generated">Generated<br>${generatedAt}</div>
+      </div>
+
+      <div class="report-card__hero">
+        <div class="report-card__hero-stat">
+          <span class="report-card__hero-label">This week's spend</span>
+          <div class="report-card__hero-value">${currency}${fmt(spend.this_week_total || 0)}</div>
+          ${totalDeltaHtml}
+        </div>
+        <div class="report-card__hero-stat">
+          <span class="report-card__hero-label">Top category</span>
+          <div class="report-card__hero-value" style="font-size:18px;">${topCategory ? escapeHtml(topCategory.category) : '—'}</div>
+          ${topCategory ? `<span class="report-card__hero-delta report-card__hero-delta--down">${currency}${fmt(topCategory.this_week)}</span>` : ''}
+        </div>
+        <div class="report-card__hero-stat">
+          <span class="report-card__hero-label">Flags this week</span>
+          <div class="report-card__hero-value">${flagCount}</div>
+        </div>
+      </div>
+
+      <div class="report-card__section-title">Spend by category</div>
+      ${barsHtml}
+
+      <div class="report-card__suggestions">
+        <div class="report-card__section-title">Suggestions</div>
+        ${suggestionsHtml}
+      </div>
+
+      <div class="report-card__footer">This report is educational and based on your logged Hisaab transactions. Not financial advice.</div>
+    </div>`;
+}
+
+async function populateWeeklyReportHistory(selectedId) {
+  const sel = document.getElementById('weeklyReportHistorySelect');
+  if (!sel) return;
+  try {
+    const history = await window.api.fetchWeeklySuggestionsHistory();
+    sel.innerHTML = history.map(r =>
+      `<option value="${r.id}">${suFormatDateRange(r.week_start, r.week_end)}</option>`
+    ).join('');
+    if (selectedId) sel.value = String(selectedId);
+  } catch (e) {
+    sel.innerHTML = '<option value="">This week</option>';
+  }
+}
+
+async function loadWeeklySuggestions() {
+  const el = document.getElementById('weeklySuggestions');
+  if (!el) return;
+  el.innerHTML = '<p class="sim-empty">Loading…</p>';
+  try {
+    const data = await window.api.fetchWeeklySuggestions();
+    window.startupState.currentWeeklyReport = data;
+    el.innerHTML = suWeeklyReportCardHtml(data);
+    await populateWeeklyReportHistory(data.id);
+  } catch (e) {
+    el.innerHTML = '<p class="sim-empty">Failed to load weekly report.</p>';
+  }
+}
+
+const weeklyHistorySelectEl = document.getElementById('weeklyReportHistorySelect');
+if (weeklyHistorySelectEl) {
+  weeklyHistorySelectEl.addEventListener('change', async (e) => {
+    const el = document.getElementById('weeklySuggestions');
+    const id = e.target.value;
+    if (!id) return;
+    el.innerHTML = '<p class="sim-empty">Loading…</p>';
+    try {
+      const data = await window.api.fetchWeeklySuggestionsById(Number(id));
+      window.startupState.currentWeeklyReport = data;
+      el.innerHTML = suWeeklyReportCardHtml(data);
+    } catch (err) {
+      el.innerHTML = '<p class="sim-empty">Failed to load that report.</p>';
+    }
+  });
+}
+
+const btnDownloadWeeklyPdfEl = document.getElementById('btnDownloadWeeklyPdf');
+if (btnDownloadWeeklyPdfEl) {
+  btnDownloadWeeklyPdfEl.addEventListener('click', async () => {
+    const cardEl = document.getElementById('weeklyReportCard');
+    if (!cardEl || typeof html2canvas === 'undefined' || typeof window.jspdf === 'undefined') {
+      alert('PDF export isn\'t ready yet — please try again in a moment.');
+      return;
+    }
+    const btn = btnDownloadWeeklyPdfEl;
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Generating…';
+    try {
+      const canvas = await html2canvas(cardEl, {
+        backgroundColor: getComputedStyle(document.body).getPropertyValue('--surface') || '#111111',
+        scale: 2, useCORS: true,
+      });
+      const imgData = canvas.toDataURL('image/png');
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = pageWidth - 40;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      let heightLeft = imgHeight;
+      let position = 20;
+      pdf.addImage(imgData, 'PNG', 20, position, imgWidth, imgHeight);
+      heightLeft -= (pageHeight - 40);
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight + 20;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 20, position, imgWidth, imgHeight);
+        heightLeft -= (pageHeight - 40);
+      }
+
+      const report = window.startupState.currentWeeklyReport;
+      const filename = report ? `weekly-report-${report.week_start}.pdf` : 'weekly-report.pdf';
+      pdf.save(filename);
+    } catch (e) {
+      console.error(e);
+      alert('Failed to generate PDF: ' + (e.message || 'please try again.'));
+    }
+    btn.disabled = false;
+    btn.textContent = originalText;
+  });
+}
+
 async function renderReportsView() {
   const briefEl = document.getElementById('dailyBriefFull');
   if (briefEl) {
@@ -896,6 +1174,7 @@ async function renderReportsView() {
     }
   }
   await loadWeeklyReport();
+  await loadWeeklySuggestions();
 }
 
 const btnRefreshWeeklyEl = document.getElementById('btnRefreshWeekly');

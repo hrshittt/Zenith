@@ -776,7 +776,124 @@ def build_daily_brief(ctx: StartupContext, metrics: Dict[str, Any], snapshots: L
 
     return {"status": "actual", "as_of": today.isoformat(), "compared_to": prev.snapshot_date.isoformat(), "bullets": bullets}
 
+def get_calendar_week_bounds(anchor: Optional[date] = None) -> Tuple[date, date]:
+    """Returns (Monday, Sunday) for the calendar week containing `anchor`
+    (defaults to today)."""
+    anchor = anchor or date.today()
+    monday = anchor - timedelta(days=anchor.weekday())
+    sunday = monday + timedelta(days=6)
+    return monday, sunday
 
+
+def build_weekly_category_spend(transactions: List[Any], anchor: Optional[date] = None) -> Dict[str, Any]:
+    """Categorized Money-out spend for 'this week' (Mon-Sun containing `anchor`,
+    default today) vs 'last week' (the prior Mon-Sun), computed purely from
+    Hisaab transactions (source-agnostic — works for manual now, and
+    automatically includes 'auto' entries once Gmail import exists).
+    Deterministic — no AI involved in the numbers, only in phrasing them."""
+    this_week_start, this_week_end = get_calendar_week_bounds(anchor)
+    last_week_start = this_week_start - timedelta(days=7)
+    last_week_end = this_week_start - timedelta(days=1)
+
+    out_txns = [t for t in transactions if t.type == "out"]
+    if not out_txns:
+        return {
+            "status": "insufficient_data", "this_week_total": None, "last_week_total": None,
+            "pct_change": None, "categories": [], "note": "No expense transactions logged yet.",
+            "week_range": {"start": this_week_start.isoformat(), "end": this_week_end.isoformat()},
+        }
+
+    def _bucket(txns_in_range):
+        buckets: Dict[str, float] = {}
+        for t in txns_in_range:
+            buckets[t.category or "Uncategorized"] = buckets.get(t.category or "Uncategorized", 0) + t.amount
+        return buckets
+
+    this_week_txns = [t for t in out_txns if this_week_start <= t.txn_date <= this_week_end]
+    last_week_txns = [t for t in out_txns if last_week_start <= t.txn_date <= last_week_end]
+
+    this_week_buckets = _bucket(this_week_txns)
+    last_week_buckets = _bucket(last_week_txns)
+
+    this_week_total = round(sum(this_week_buckets.values()), 2)
+    last_week_total = round(sum(last_week_buckets.values()), 2)
+    pct_change = None
+    if last_week_total > 0:
+        pct_change = round((this_week_total - last_week_total) / last_week_total * 100, 1)
+    elif this_week_total > 0:
+        pct_change = None  # no prior baseline to compare against — avoid a misleading "infinite%" jump
+
+    all_categories = sorted(set(this_week_buckets) | set(last_week_buckets))
+    categories = []
+    for cat in all_categories:
+        cur = round(this_week_buckets.get(cat, 0), 2)
+        prev = round(last_week_buckets.get(cat, 0), 2)
+        cat_pct_change = None
+        if prev > 0:
+            cat_pct_change = round((cur - prev) / prev * 100, 1)
+        categories.append({
+            "category": cat, "this_week": cur, "last_week": prev, "pct_change": cat_pct_change,
+            "is_new": prev == 0 and cur > 0,
+        })
+    categories.sort(key=lambda c: -c["this_week"])
+
+    if not this_week_txns and not last_week_txns:
+        status = "insufficient_data"
+        note = "No expense transactions in the last two weeks."
+    elif not this_week_txns:
+        status = "insufficient_data"
+        note = "No expenses logged this week yet."
+    elif not last_week_txns:
+        status = "actual"
+        note = "First week with logged expenses — week-over-week comparison will appear once last week has data too."
+    else:
+        status = "actual"
+        note = None
+
+    return {
+        "status": status, "this_week_total": this_week_total, "last_week_total": last_week_total,
+        "pct_change": pct_change, "categories": categories, "note": note,
+        "week_range": {"start": this_week_start.isoformat(), "end": this_week_end.isoformat()},
+    }
+def flag_category_concerns(category_spend: Dict[str, Any], ctx: StartupContext, metrics: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Deterministic rules that flag categories worth a suggestion — computed
+    from numbers only, never phrased here. Rules:
+    - A category grew >25% week-over-week (and is a meaningful amount, not noise)
+    - A brand-new category appeared this week with a non-trivial amount
+    - Total weekly spend is eating into a thin runway (< 6mo)
+    """
+    flags = []
+    if category_spend.get("status") != "actual":
+        return flags
+
+    runway = metrics.get("runway")
+    runway_value = runway.value if runway and runway.status != "insufficient_data" else None
+    noise_floor = 500  # ignore categories under this amount — not worth a suggestion
+
+    for cat in category_spend.get("categories", []):
+        if cat["this_week"] < noise_floor:
+            continue
+        if cat["is_new"]:
+            flags.append({
+                "type": "new_category", "category": cat["category"], "amount": cat["this_week"],
+                "detail": f"New spending category this week: {cat['category']} at ₹{cat['this_week']:,.0f}.",
+            })
+        elif cat["pct_change"] is not None and cat["pct_change"] > 25:
+            flags.append({
+                "type": "spike", "category": cat["category"], "amount": cat["this_week"],
+                "pct_change": cat["pct_change"],
+                "detail": f"{cat['category']} rose {cat['pct_change']:.0f}% week-over-week (₹{cat['last_week']:,.0f} → ₹{cat['this_week']:,.0f}).",
+            })
+
+    if runway_value is not None and runway_value < 6 and category_spend.get("this_week_total", 0) > 0:
+        top_cat = category_spend["categories"][0] if category_spend.get("categories") else None
+        if top_cat:
+            flags.append({
+                "type": "thin_runway", "category": top_cat["category"], "amount": top_cat["this_week"],
+                "detail": f"Runway is {runway_value:.1f} months — below the 6-month safety threshold — while {top_cat['category']} was the top expense this week at ₹{top_cat['this_week']:,.0f}.",
+            })
+
+    return flags
 def build_weekly_report(ctx: StartupContext, metrics: Dict[str, Any], snapshots: List[StartupMetricSnapshot]) -> Dict[str, Any]:
     today = date.today()
     window_start = today - timedelta(days=6)

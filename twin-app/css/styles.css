@@ -52,7 +52,10 @@
   --chart-grid:  rgba(255, 255, 255, 0.05);
   --chart-axis:  #606060;
   --chart-muted: #A0A0A0;
-<<<<<<< HEAD
+
+  /* Fallbacks so var(--text)/var(--text-muted) used below resolve correctly */
+  --text:        var(--ink);
+  --text-muted:  var(--ink-muted);
 }
 
 [data-theme="light"] {
@@ -61,12 +64,14 @@
   --surface:       #FFFFFF;
   --surface-2:     #F3F4F6;
   --surface-3:     #E5E7EB;
-  
+
   /* Text */
   --ink:           #1F2937;
   --ink-muted:     #4B5563;
   --ink-faint:     #9CA3AF;
-  
+  --text:          #1F2937;
+  --text-muted:    #4B5563;
+
   /* Borders & Lines */
   --line:          rgba(0, 0, 0, 0.08);
   --line-strong:   rgba(0, 0, 0, 0.15);
@@ -74,9 +79,9 @@
   --chart-grid:    rgba(0, 0, 0, 0.05);
   --chart-axis:    #9CA3AF;
   --chart-muted:   #6B7280;
-  
+
   /* Primary & Accents for Light Mode */
-  --primary:       #009999; /* Darker cyan/teal for text contrast */
+  --primary:       #009999;
   --primary-text:  #FFFFFF;
   --primary-dark:  #006666;
   --primary-tint:  rgba(0, 153, 153, 0.15);
@@ -86,8 +91,6 @@
 /* Base Transition for Theme Change */
 body {
   transition: background-color 0.4s ease, color 0.4s ease;
-=======
->>>>>>> 509c1f718279cf25d9eb8ac81e99a0cfd8f5aa44
 }
 
 *,*::before,*::after{ box-sizing:border-box; }
@@ -753,7 +756,7 @@ ul.sim-history{ list-style:none; margin:0; padding:0; }
 .tag--neutral{ background:var(--surface-2); color:var(--ink-muted); }
 
 /* ============ Hisaab ============ */
-.hisaab-form{ display:grid; grid-template-columns:130px 1fr 150px 1fr auto; gap:10px; align-items:center; }
+.hisaab-form{ display:grid; grid-template-columns:130px 1fr 140px 150px 1fr auto auto; gap:10px; align-items:center; }
 .hisaab-form .ob-input{ margin-bottom:0; }
 
 .hisaab-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px; }
@@ -772,6 +775,73 @@ ul.sim-history{ list-style:none; margin:0; padding:0; }
   .startup-extra-grid{ grid-template-columns:1fr; }
   .field-row{ grid-template-columns:1fr; }
   .hisaab-form{ grid-template-columns:1fr 1fr; }
+}
+
+.hisaab-row__actions{ display:flex; gap:8px; flex-shrink:0; }
+.hisaab-row__action-btn{ background:none; border:none; cursor:pointer; color:var(--ink-faint); font-size:12px; padding:4px 6px; text-decoration:underline; }
+.hisaab-row__action-btn:hover{ color:var(--primary); }
+.hisaab-row__action-btn--danger:hover{ color:var(--warn); }
+
+.weekly-cat-list{ list-style:none; margin:0 0 20px; padding:0; display:flex; flex-direction:column; gap:2px; }
+.weekly-cat-list li{ display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid var(--line); font-size:13.5px; }
+.weekly-cat-list li:last-child{ border-bottom:none; padding-bottom:0; }
+.weekly-cat-list__name{ display:flex; align-items:center; gap:8px; }
+.weekly-cat-list__delta{ font-family:var(--font-mono); font-size:11.5px; padding:2px 7px; border-radius:20px; }
+.weekly-cat-list__delta--up{ background:var(--warn-tint); color:var(--warn); }
+.weekly-cat-list__delta--down{ background:var(--primary-tint); color:var(--primary-dark); }
+.weekly-cat-list__delta--new{ background:var(--accent-tint); color:var(--accent); }
+
+.suggestion-card{ background:var(--surface-2); border-radius:var(--radius); padding:14px 16px; margin-bottom:10px; }
+.suggestion-card:last-child{ margin-bottom:0; }
+.suggestion-card__title{ font-size:13.5px; font-weight:600; color:var(--ink); margin-bottom:4px; }
+.suggestion-card__detail{ font-size:13px; color:var(--ink-muted); }
+
+/* ---------- Weekly report — printable card design ---------- */
+.report-card{
+  background: linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 32px 36px;
+  color: var(--ink);
+}
+.report-card__masthead{
+  display:flex; justify-content:space-between; align-items:flex-start;
+  border-bottom: 1px solid var(--line-strong); padding-bottom:20px; margin-bottom:24px;
+}
+.report-card__brand{ display:flex; align-items:center; gap:8px; font-family:var(--font-mono); font-size:15px; letter-spacing:0.06em; color:#fff; }
+.report-card__brand .brand__mark{ color:var(--accent); }
+.report-card__title{ font-family:var(--font-display); font-size:26px; margin-top:10px; }
+.report-card__range{ font-family:var(--font-mono); font-size:12.5px; color:var(--ink-faint); margin-top:6px; }
+.report-card__generated{ text-align:right; font-size:11.5px; color:var(--ink-faint); }
+
+.report-card__hero{
+  display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:28px;
+}
+.report-card__hero-stat{ background:var(--surface-2); border-radius:10px; padding:16px 18px; }
+.report-card__hero-label{ font-size:11.5px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:0.05em; font-family:var(--font-mono); margin-bottom:8px; display:block; }
+.report-card__hero-value{ font-family:var(--font-mono); font-size:24px; font-weight:500; color:var(--ink); }
+.report-card__hero-delta{ font-family:var(--font-mono); font-size:12px; margin-top:6px; display:inline-block; padding:2px 8px; border-radius:20px; }
+.report-card__hero-delta--up{ background:var(--warn-tint); color:var(--warn); }
+.report-card__hero-delta--down{ background:var(--primary-tint); color:var(--primary-dark); }
+
+.report-card__section-title{
+  font-family:var(--font-mono); font-size:12px; text-transform:uppercase; letter-spacing:0.08em;
+  color:var(--primary); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--line);
+}
+
+.report-card__bar-row{ display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+.report-card__bar-row:last-child{ margin-bottom:0; }
+.report-card__bar-label{ width:140px; flex-shrink:0; font-size:13px; color:var(--ink); display:flex; align-items:center; gap:6px; }
+.report-card__bar-track{ flex:1; height:20px; background:var(--surface-2); border-radius:6px; overflow:hidden; position:relative; }
+.report-card__bar-fill{ height:100%; background:linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%); border-radius:6px; transition:width 0.3s ease; }
+.report-card__bar-value{ width:90px; flex-shrink:0; text-align:right; font-family:var(--font-mono); font-size:13px; color:var(--ink); }
+
+.report-card__suggestions{ margin-top:28px; }
+.report-card__footer{ margin-top:32px; padding-top:16px; border-top:1px solid var(--line); font-size:11px; color:var(--ink-faint); text-align:center; }
+
+@media (max-width: 900px){
+  .report-card__hero{ grid-template-columns:1fr; }
+  .report-card__bar-label{ width:100px; }
 }
 @media (max-width: 720px){
   .hisaab-form{ grid-template-columns:1fr; }
