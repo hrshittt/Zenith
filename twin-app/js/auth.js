@@ -49,7 +49,12 @@ if (loginForm) {
         profileKey: data.profile_key
       }));
 
-      window.location.href = '/dashboard.html';
+      // Check onboarding status
+      if (data.profile_key && data.profile_key.trim() !== '') {
+        window.location.href = '/dashboard.html';
+      } else {
+        window.location.href = '/register.html?resume=true';
+      }
     } catch (err) {
       showError('loginError', err.message);
       btn.disabled = false;
@@ -111,6 +116,57 @@ function setStep(step) {
     document.getElementById('step2').classList.add('is-active');
   } else if (step === 3) {
     document.getElementById(`step3-${selectedAccountType}`).classList.add('is-active');
+  } else if (step === 4) {
+    document.getElementById(`step4-${selectedAccountType}`).classList.add('is-active');
+  } else if (step === 5) {
+    document.getElementById(`step5-${selectedAccountType}`).classList.add('is-active');
+  }
+}
+
+// Resume onboarding if needed
+if (urlParams.has('zoho')) {
+  const zohoStatus = urlParams.get('zoho');
+  const savedState = JSON.parse(localStorage.getItem('twin_onboarding_state') || '{}');
+  if (savedState.accountType) selectedAccountType = savedState.accountType;
+  
+  if (zohoStatus === 'success') {
+    savedState.zohoConnected = true;
+    localStorage.setItem('twin_onboarding_state', JSON.stringify(savedState));
+    
+    // Inject real data pulled from Zoho Books
+    const cash = parseFloat(urlParams.get('cash') || 0);
+    const rev = parseFloat(urlParams.get('rev') || 0);
+    const burn = parseFloat(urlParams.get('burn') || 0);
+
+    document.getElementById('suCurrentCash').value = cash;
+    document.getElementById('suMonthlyRevenue').value = rev;
+    document.getElementById('suMonthlyBurn').value = burn;
+    document.getElementById('zohoMsg').style.display = 'block';
+    
+    if (cash === 0 && rev === 0 && burn === 0) {
+      document.getElementById('zohoMsg').textContent = '✅ Zoho Books connected! (Note: No active transactions found, please fill manually)';
+    } else {
+      document.getElementById('zohoMsg').textContent = '✅ Zoho Books connected. We imported your real data. Please review.';
+    }
+    
+    document.getElementById('step5Title').textContent = 'Confirm Financial Details';
+    
+    updateCalculations();
+    setStep(5);
+  } else {
+    alert("Zoho connection failed or was cancelled. Please try again or use Manual Entry.");
+    setStep(4);
+  }
+} else if (urlParams.has('resume') && urlParams.get('resume') === 'true') {
+  const savedState = JSON.parse(localStorage.getItem('twin_onboarding_state') || '{}');
+  if (savedState.accountType) selectedAccountType = savedState.accountType;
+  
+  if (!savedState.startupProfileCompleted) {
+    setStep(3);
+  } else if (!savedState.financialSetupCompleted) {
+    setStep(4);
+  } else {
+    setStep(3); // fallback
   }
 }
 
@@ -210,37 +266,130 @@ if (indForm) {
 }
 
 // Step 3: Complete Startup Profile
-const suForm = document.getElementById('startupForm');
-if (suForm) {
-  suForm.addEventListener('submit', async (e) => {
+const suProfileForm = document.getElementById('startupProfileForm');
+if (suProfileForm) {
+  suProfileForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    hideError('regError');
+    
+    const state = JSON.parse(localStorage.getItem('twin_onboarding_state') || '{}');
+    state.accountType = 'startup';
+    state.companyName = document.getElementById('suCompanyName').value;
+    state.industry = document.getElementById('suIndustry').value;
+    state.businessModel = document.getElementById('suBusinessModel').value;
+    state.stage = document.getElementById('suStage').value;
+    state.headcount = Number(document.getElementById('suHeadcount').value || 1);
+    state.startupProfileCompleted = true;
+    
+    localStorage.setItem('twin_onboarding_state', JSON.stringify(state));
+    setStep(4);
+  });
+}
+
+// Step 4: Financial Setup Choice
+let selectedFinType = 'manual';
+const finSetupOptions = document.querySelectorAll('#finSetupOptions .ob-option');
+if (finSetupOptions.length > 0) {
+  finSetupOptions.forEach(opt => {
+    opt.addEventListener('click', () => {
+      finSetupOptions.forEach(o => o.classList.remove('is-selected'));
+      opt.classList.add('is-selected');
+      selectedFinType = opt.dataset.finType;
+    });
+  });
+
+  const btnNext4 = document.getElementById('btnNext4Startup');
+  if (btnNext4) {
+    btnNext4.addEventListener('click', () => {
+      const state = JSON.parse(localStorage.getItem('twin_onboarding_state') || '{}');
+      if (selectedFinType === 'zoho') {
+        // Trigger real Zoho OAuth Flow
+        btnNext4.disabled = true;
+        btnNext4.textContent = 'Connecting to Zoho...';
+        
+        // Save state so we can resume properly when callback returns
+        state.zohoConnected = false; 
+        localStorage.setItem('twin_onboarding_state', JSON.stringify(state));
+        
+        window.location.href = `${API_BASE}/api/zoho/auth`;
+      } else {
+        document.getElementById('zohoMsg').style.display = 'none';
+        document.getElementById('step5Title').textContent = 'Enter Financial Details';
+        state.zohoConnected = false;
+        localStorage.setItem('twin_onboarding_state', JSON.stringify(state));
+        setStep(5);
+      }
+    });
+  }
+}
+
+// Auto-calculations for Step 5
+function updateCalculations() {
+  const cash = Number(document.getElementById('suCurrentCash').value || 0);
+  const rev = Number(document.getElementById('suMonthlyRevenue').value || 0);
+  const burn = Number(document.getElementById('suMonthlyBurn').value || 0);
+  
+  const netCashFlow = rev - burn;
+  const runway = (netCashFlow < 0 && cash > 0) ? (cash / Math.abs(netCashFlow)).toFixed(1) : '\u221E';
+  
+  document.getElementById('calcCashFlow').textContent = (netCashFlow < 0 ? '-' : '+') + '\u20B9' + Math.abs(netCashFlow).toLocaleString();
+  document.getElementById('calcCashFlow').style.color = netCashFlow < 0 ? 'var(--warn)' : 'var(--good)';
+  document.getElementById('calcRunway').textContent = runway;
+  document.getElementById('calcRunway').style.color = (runway !== '\u221E' && runway < 6) ? 'var(--warn)' : 'var(--good)';
+}
+
+const calcInputs = ['suCurrentCash', 'suMonthlyRevenue', 'suMonthlyBurn'];
+calcInputs.forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', updateCalculations);
+});
+
+// Step 5: Final Submission
+const suFinForm = document.getElementById('startupFinForm');
+if (suFinForm) {
+  suFinForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     hideError('regError');
     const btn = document.getElementById('btnSuSubmit');
     btn.disabled = true;
-    btn.textContent = 'Initializing...';
+    btn.textContent = 'Initializing Twin...';
+
+    const state = JSON.parse(localStorage.getItem('twin_onboarding_state') || '{}');
+    state.financialSetupCompleted = true;
+    localStorage.setItem('twin_onboarding_state', JSON.stringify(state));
 
     const payload = {
       founder: { name: "Founder", email: "", mobile: "", preferred_language: "English" },
       company: { 
-        name: document.getElementById('suCompanyName').value, 
-        industry: document.getElementById('suIndustry').value,
-        business_model: "", founded_year: 2024, stage: "", location: "", website: "", headcount: 0 
+        name: state.companyName || "My Startup", 
+        industry: state.industry || "",
+        business_model: state.businessModel || "", 
+        founded_year: new Date().getFullYear(), 
+        stage: state.stage || "", 
+        location: "", 
+        website: "", 
+        headcount: state.headcount || 1 
       },
       revenue: {
-        is_pre_revenue: false,
+        is_pre_revenue: (Number(document.getElementById('suMonthlyRevenue').value || 0) === 0),
         monthly_revenue: Number(document.getElementById('suMonthlyRevenue').value || 0),
-        revenue_streams: "", revenue_growth_pct: null, paying_customers: 0
+        revenue_streams: [], revenue_growth_pct: null, paying_customers: 0
       },
       expenses: {
-        fixed_costs: Number(document.getElementById('suFixedCosts').value || 0),
+        fixed_costs: Number(document.getElementById('suMonthlyBurn').value || 0), // Assumed as total for simplification
         variable_costs: 0
       },
       cash: {
         current_cash: Number(document.getElementById('suCurrentCash').value || 0),
         monthly_burn: Number(document.getElementById('suMonthlyBurn').value || 0)
       },
-      debt: { business_loans_debt: 0 },
-      funding: { total_funding: 0, last_round: "", currently_fundraising: false, fundraising_target: null },
+      debt: { business_loans_debt: Number(document.getElementById('suDebt').value || 0) },
+      funding: { 
+        total_funding: Number(document.getElementById('suTotalFunding').value || 0), 
+        last_round: "", 
+        currently_fundraising: false, 
+        fundraising_target: null 
+      },
       team: { planned_hires: 0, cost_per_hire: 0 },
       goals: [],
       current_decision: ""
@@ -248,11 +397,21 @@ if (suForm) {
 
     try {
       await authFetch('/onboard/startup', payload);
+      
+      // Update session with new profileKey
+      const sess = JSON.parse(localStorage.getItem('twin_session') || '{}');
+      sess.profileKey = 'startup';
+      localStorage.setItem('twin_session', JSON.stringify(sess));
+      
+      // Mark global onboarding complete
+      state.onboardingCompleted = true;
+      localStorage.setItem('twin_onboarding_state', JSON.stringify(state));
+      
       window.location.href = '/dashboard.html';
     } catch (err) {
       showError('regError', err.message);
       btn.disabled = false;
-      btn.textContent = 'Initialize Twin';
+      btn.textContent = 'Create Financial Twin';
     }
   });
 }
