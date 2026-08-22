@@ -16,15 +16,15 @@ async def lifespan(app: FastAPI):
     yield
     stop_scheduler()
 
-from backend.routers import profile, twin, onboarding, auth, startup
+from backend.routers import auth, onboarding, profile, startup, twin
 
 app = FastAPI(title="Agentic Financial Decision Twin", lifespan=lifespan)
 
 app.include_router(auth.router)
-app.include_router(profile.router)
-app.include_router(twin.router)
 app.include_router(onboarding.router)
+app.include_router(profile.router)
 app.include_router(startup.router)
+app.include_router(twin.router)
 
 # Allow CORS for the frontend
 app.add_middleware(
@@ -38,3 +38,15 @@ app.add_middleware(
 @app.get("/")
 def read_root():
     return {"message": "Agentic Financial Decision Twin API is running"}
+
+import traceback
+from fastapi import Request
+from fastapi.responses import JSONResponse
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    with open("error.log", "a") as f:
+        f.write(f"Unhandled Exception on {request.url}:\n")
+        f.write(traceback.format_exc())
+        f.write("\n")
+    return JSONResponse(status_code=500, content={"detail": "Internal Server Error"})

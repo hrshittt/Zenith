@@ -173,6 +173,17 @@ async function deleteChatSession(sessionId) {
     return await res.json();
 }
 
+async function getTTS(text) {
+    const res = await fetch(`${API_BASE}/twin/tts`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({ text })
+    });
+    if (!res.ok) throw new Error("TTS failed");
+    const blob = await res.blob();
+    return URL.createObjectURL(blob);
+}
+
 window.api = {
     login,
     fetchProfile,
@@ -190,6 +201,7 @@ window.api = {
     fetchStartupOverview,
     fetchStartupHisaab,
     addStartupTransaction,
-    fetchWeeklyReport
+    fetchWeeklyReport,
+    getTTS
 };
 
